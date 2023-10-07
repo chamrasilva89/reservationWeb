@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/chamrasilva89/reservationWeb/pkg/config"
-	"github.com/chamrasilva89/reservationWeb/pkg/handler"
-	"github.com/chamrasilva89/reservationWeb/pkg/render"
+	"github.com/chamrasilva89/reservationWeb/internal/config"
+	"github.com/chamrasilva89/reservationWeb/internal/handler"
+	"github.com/chamrasilva89/reservationWeb/internal/render"
 )
 
 const portNumber = ":8080"
