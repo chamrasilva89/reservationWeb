@@ -139,6 +139,17 @@ function notifyModal(title,text,icon,confirmationButton){
   confirmButtonText: confirmationButton
 })
 }
+{{with .Error}}
+notify("{{.}}","error")
+{{end}}
+
+{{with .Flash}}
+notify("{{.}}","success")
+{{end}}
+
+{{with .Warning}}
+notify("{{.}}","warning")
+{{end}}
 
 function prompt(){
       let toast = function(x){
