@@ -1,0 +1,14 @@
+create_table("memorandums") {
+  t.Column("trade_license_id", "integer", {})
+  t.Column("customer_id", "integer", {})
+  t.Column("memorandum_id", "integer", {primary: true})
+  t.Column("customer_code", "string", {"default": ""})
+  t.Column("representative_name", "string", {"default": ""})
+  t.Column("representative_no_of_shares", "integer", {"default": 0})
+  t.Column("representative_emirateID", "string", {"default": ""})
+  t.Column("emirateid_expire_date", "date", {})
+  t.Column("representative_passport", "string", {"default": ""})
+  t.Column("passport_expire_date", "date", {})
+  t.Column("id_file_path", "string", {"default": ""})
+  t.Column("passport_file_path", "string", {"default": ""})
+}

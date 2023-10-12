@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/chamrasilva89/reservationWeb/internal/helpers"
 	"github.com/justinas/nosurf"
 )
-/*WriteToConsole:
+
+/*
+WriteToConsole:
 
 This middleware function simply logs a message to the console when an HTTP request is received.
 It takes an http.Handler called next as an argument, which represents the next middleware or the final request handler.
@@ -19,7 +22,8 @@ func WriteToConsole(next http.Handler) http.Handler {
 	})
 }
 
-/*NoSurf:
+/*
+NoSurf:
 
 This middleware function is responsible for preventing Cross-Site Request Forgery (CSRF) attacks using the "nosurf" package.
 It wraps the next handler with CSRF protection by creating a new nosurf.CSRFHandler with the next handler as its target.
@@ -37,7 +41,9 @@ func NoSurf(next http.Handler) http.Handler {
 	})
 	return csrfHandler
 }
-/*SessionLoad:
+
+/*
+SessionLoad:
 
 This middleware function is responsible for managing sessions.
 It takes the next handler and wraps it to load and save sessions.
@@ -48,7 +54,8 @@ func SessionLoad(next http.Handler) http.Handler {
 	return session.LoadAndSave(next)
 }
 
-/*Auth:
+/*
+Auth:
 
 This is an authentication middleware that checks if a user is authenticated before allowing access to certain routes.
 It takes the next handler and wraps it to perform the authentication check.

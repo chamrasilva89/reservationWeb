@@ -1,0 +1,15 @@
+create_table("customers") {
+  t.Column("customer_id", "integer", {primary: true})
+  t.Column("customer_code", "string", {"default": ""})
+  t.Column("customer_name", "string", {"default": ""})
+  t.Column("contact_person", "string", {"default": ""})
+  t.Column("contact_tel", "string", {"default": ""})
+  t.Column("contact_mobile", "string", {"default": ""})
+  t.Column("contact_email", "string", {"default": ""})
+  t.Column("customer_business", "string", {"default": ""})
+  t.Column("customer_location", "string", {"default": ""})
+  t.Column("customer_status", "string", {"default": ""})
+  t.Column("marketer_name", "string", {"default": ""})
+  t.Column("marketer_code", "string", {"default": ""})
+  t.Column("marketer_email", "string", {})
+}

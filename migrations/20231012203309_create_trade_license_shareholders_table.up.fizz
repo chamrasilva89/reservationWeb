@@ -1,0 +1,16 @@
+create_table("trade_license_shareholders") {
+  t.Column("trade_license_id", "integer", {})
+  t.Column("customer_id", "integer", {})
+  t.Column("shareholder_id", "integer", {primary: true})
+  t.Column("customer_code", "string", {"default": ""})
+  t.Column("shareholder_name", "string", {"default": ""})
+  t.Column("shareholder_role", "string", {"default": ""})
+  t.Column("shareholder_nationality", "string", {"default": ""})
+  t.Column("shareholder_no_of_shares", "integer", {"default": 0})
+  t.Column("shareholder_emirateID", "string", {"default": ""})
+  t.Column("emirateid_expire_date", "date", {})
+  t.Column("shareholder_passport", "string", {"default": ""})
+  t.Column("passport_expire_date", "date", {})
+  t.Column("id_file_path", "string", {"default": ""})
+  t.Column("passport_file_path", "string", {"default": ""})
+}
