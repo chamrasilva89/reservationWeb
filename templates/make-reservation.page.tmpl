@@ -10,6 +10,7 @@
                 <form method="post" action="/make-reservation" class="" novalidate>
                   <input type='hidden' name='csrf_token' value="{{.CSRFToken}}">
 
+                    <!-- First Name Input -->
                     <div class="form-group mt-3">
                         <label for="first_name">First Name:</label>
                         {{with .Form.Errors.Get "first_name"}}
@@ -20,6 +21,7 @@
                                name='first_name' value="{{$res.FirstName}}" required>
                     </div>
 
+                    <!-- Last Name Input -->
                     <div class="form-group">
                         <label for="last_name">Last Name:</label>
                         {{with .Form.Errors.Get "last_name"}}
@@ -30,6 +32,26 @@
                                name='last_name' value="{{$res.LastName}}" required>
                     </div>
 
+                    <!-- Start Date Input -->
+                    <div class="form-group">
+                        <label for="start_date">Start Date:</label>
+                        <input class="form-control"
+                               id="start_date"  type='text'
+                               name='start_date' >
+                    </div>
+
+                    <!-- End Date Input -->
+                    <div class="form-group">
+                        <label for="end_date">End Date:</label>
+                        <input class="form-control"
+                               id="end_date"  type='text'
+                               name='end_date' >
+                    </div>
+
+                    <!-- Room ID (Hidden Input) -->
+                    <input type="hidden" name="room_id" value="1">
+
+                    <!-- Email Input -->
                     <div class="form-group">
                         <label for="email">Email:</label>
                          {{with .Form.Errors.Get "email"}}
@@ -39,7 +61,8 @@
                                autocomplete="off" type='email'
                                name='email' value="{{$res.Email}}" required>
                     </div>
-
+             
+                    <!-- Phone Input -->
                     <div class="form-group">
                         <label for="phone">Phone:</label>
                         {{with .Form.Errors.Get "phone"}}
@@ -53,10 +76,7 @@
                     <hr>
                     <input type="submit" class="btn btn-primary" value="Make Reservation">
                 </form>
-
-
             </div>
         </div>
-
     </div>
 {{end}}
