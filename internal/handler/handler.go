@@ -359,3 +359,81 @@ func (m *Repository) AdminShowReservation(w http.ResponseWriter, r *http.Request
 		Form:      forms.New(nil),
 	})
 }
+
+// AdminPostShowReservation posts a reservation
+func (m *Repository) AdminPostShowReservation(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	exploded := strings.Split(r.RequestURI, "/")
+
+	id, err := strconv.Atoi(exploded[4])
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	src := exploded[3]
+
+	stringMap := make(map[string]string)
+	stringMap["src"] = src
+
+	res, err := m.DB.GetReservationByID(id)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	res.FirstName = r.Form.Get("first_name")
+	res.LastName = r.Form.Get("last_name")
+	res.Email = r.Form.Get("email")
+	res.Phone = r.Form.Get("phone")
+
+	err = m.DB.UpdateReservation(res)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	month := r.Form.Get("month")
+	year := r.Form.Get("year")
+
+	m.App.Session.Put(r.Context(), "flash", "Changes saved")
+
+	if year == "" {
+		http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+	} else {
+		http.Redirect(w, r, fmt.Sprintf("/admin/reservations-calendar?y=%s&m=%s", year, month), http.StatusSeeOther)
+	}
+}
+
+// AdminProcessReservation marks a reservation as processed
+func (m *Repository) AdminProcessReservation(w http.ResponseWriter, r *http.Request) {
+    // Extract the 'id' and 'src' parameters from the URL
+    id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+    src := chi.URLParam(r, "src")
+    
+    // Call the UpdateProcessedForReservation method to mark the reservation as processed
+    err := m.DB.UpdateProcessedForReservation(id, 1)
+    if err != nil {
+        log.Println(err)
+    }
+
+    // Get the 'y' and 'm' query parameters from the URL
+    year := r.URL.Query().Get("y")
+    month := r.URL.Query().Get("m")
+
+    // Set a flash message using the session to indicate that the reservation is marked as processed
+    m.App.Session.Put(r.Context(), "flash", "Reservation marked as processed")
+
+    if year == "" {
+        // If 'year' is empty, redirect to the reservations page for the specified 'src'
+        http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+    } else {
+        // If 'year' is not empty, redirect to the reservations calendar page with 'year' and 'month' query parameters
+        http.Redirect(w, r, fmt.Sprintf("/admin/reservations-calendar?y=%s&m=%s", year, month), http.StatusSeeOther)
+    }
+}
