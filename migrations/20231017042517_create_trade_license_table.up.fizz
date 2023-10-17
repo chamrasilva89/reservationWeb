@@ -1,0 +1,11 @@
+create_table("trade_license") {
+  t.Column("trade_license_id", "integer", {primary: true})
+  t.Column("customer_id", "integer", {})
+  t.Column("emirate", "string", {"default": ""})
+  t.Column("mohreNo", "string", {"default": ""})
+  t.Column("trade_name", "string", {"default": ""})
+  t.Column("legal_status", "string", {"default": ""})
+  t.Column("establishment_date", "date", {})
+  t.Column("registration_date", "date", {})
+  t.Column("license_expiray", "date", {})
+}

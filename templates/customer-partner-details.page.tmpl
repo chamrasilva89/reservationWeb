@@ -1,0 +1,57 @@
+{{template "base" .}}
+
+{{define "content"}}
+    <!-- Content -->
+    <div class="container mt-5">
+        <h1 class="mb-4">Partner Details</h1>
+         <a href="/customer-add-partner/{{.CustomerID}}" class="btn btn-primary mb-4">Add New</a>
+        {{with index .Data "partners"}}
+            <form method="" action="" enctype="multipart/form-data">
+
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Name of the Owner/Partners/Shareholders</th>
+                            <th>EID No</th>
+                            <th>EID Expiry Date</th>
+                            <th>Passport No</th>
+                            <th>Passport Expiry Date</th>
+                            <th>Upload Documents</th>
+                        </tr>
+                    </thead>
+                    <tbody id="partnerGrid">
+                        <!-- Loop through partner records and generate rows -->
+                        {{range .}}
+                            <tr>
+                                <td>{{.ShareHolderName}}</td>
+                                <td>{{.ShEmirateID}}</td>
+                                <td>{{.ShEmIDExp}}</td>
+                                <td>{{.ShPassport}}</td>
+                                <td>{{.ShPassportExp}}</td>
+                                <td>
+                                    {{if .ShIDFilepath}}
+                                        <a href="{{.ShIDFilepath}}" target="_blank">ID Document</a>
+                                    {{end}}
+                                    {{if .ShPassFilepath}}
+                                        {{if .ShIDFilepath}} | {{end}}
+                                        <a href="{{.ShPassFilepath}}" target="_blank">Passport Document</a>
+                                    {{end}}
+                                </td>
+                            </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" id="cancel" class="btn btn-secondary">Cancel</button>
+            </form>
+                <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Your JavaScript code here, including the "Cancel" button event listener.
+        document.getElementById("cancel").addEventListener("click", function () {
+            window.history.back();
+        });
+    });
+    </script>
+        {{end}}
+    </div>
+{{end}}

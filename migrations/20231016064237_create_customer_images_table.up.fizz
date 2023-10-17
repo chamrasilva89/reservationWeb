@@ -1,0 +1,7 @@
+create_table("customer_images") {
+  t.Column("file_id", "integer", {primary: true})
+  t.Column("customer_id", "integer", {primary: false})
+  t.Column("customer_code", "string", {"default": ""})
+  t.Column("file_path", "string", {"default": ""})
+  t.Column("file_name", "string", {"default": ""})
+}

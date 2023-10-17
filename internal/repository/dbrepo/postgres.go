@@ -3,6 +3,7 @@ package dbrepo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/chamrasilva89/reservationWeb/internal/models"
@@ -391,4 +392,391 @@ func (m *postgresDBRepo) UpdateProcessedForReservation(id, processed int) error 
 	}
 
 	return nil
+}
+
+func (m *postgresDBRepo) InsertCustomer(res models.Customer) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	//
+	var newID int
+	stmt := `insert into customers (customer_code,customer_name,contact_person,contact_tel,contact_mobile,
+		contact_email,customer_business,customer_location,customer_status,marketer_name,marketer_code,marketer_email) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning customer_id`
+
+	err := m.DB.QueryRowContext(ctx, stmt,
+		res.CustomerCode,
+		res.CustomerName,
+		res.ContactPerson,
+		res.ContactNo,
+		res.MobileNo,
+		res.Email,
+		res.BusinessName,
+		res.LocationDetails,
+		res.Status,
+		res.MarketerName,
+		res.MarketedBy,
+		res.MarketerEmail,
+	).Scan(&newID)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return newID, nil
+}
+
+// Get All Customers
+func (m *postgresDBRepo) AllCustomers() ([]models.Customer, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var customers []models.Customer
+
+	query := `SELECT customer_id, customer_code, customer_name, contact_person, 
+	contact_tel, contact_mobile, contact_email, customer_business, customer_location, 
+	customer_status, marketer_name, marketer_code, marketer_email
+	FROM customers
+`
+
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return customers, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var i models.Customer
+		err := rows.Scan(
+			&i.CustomerId,
+			&i.CustomerCode,
+			&i.CustomerName,
+			&i.ContactPerson,
+			&i.ContactNo,
+			&i.MobileNo,
+			&i.Email,
+			&i.BusinessName,
+			&i.LocationDetails,
+			&i.Status,
+			&i.MarketerName,
+			&i.MarketedBy,
+			&i.MarketerEmail,
+		)
+
+		if err != nil {
+			return customers, err
+		}
+		customers = append(customers, i)
+	}
+
+	if err = rows.Err(); err != nil {
+		return customers, err
+	}
+
+	return customers, nil
+}
+
+func (m *postgresDBRepo) InsertFile(customerCode, filePath string, customerId int, uniqueFilenameWithExtension string) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var newID int
+	stmt := `INSERT INTO customer_images (customer_id,customer_code, file_path,file_name) VALUES ($1, $2,$3, $4) RETURNING file_id`
+
+	err := m.DB.QueryRowContext(ctx, stmt, customerId, customerCode, filePath, uniqueFilenameWithExtension).Scan(&newID)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return newID, nil
+}
+
+// GetReservationByID returns one reservation by ID
+func (m *postgresDBRepo) GetCustomerByID(id int) (models.Customer, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var res models.Customer
+
+	query := `SELECT customer_id, customer_code, customer_name, contact_person, 
+	contact_tel, contact_mobile, contact_email, customer_business, customer_location, 
+	customer_status, marketer_name, marketer_code, marketer_email
+	FROM customers where customer_id = $1`
+	row := m.DB.QueryRowContext(ctx, query, id)
+	err := row.Scan(
+		&res.CustomerId,
+		&res.CustomerCode,
+		&res.CustomerName,
+		&res.ContactPerson,
+		&res.ContactNo,
+		&res.MobileNo,
+		&res.Email,
+		&res.BusinessName,
+		&res.LocationDetails,
+		&res.Status,
+		&res.MarketerName,
+		&res.MarketedBy,
+		&res.MarketerEmail,
+	)
+
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
+}
+
+func (m *postgresDBRepo) GetAttachmentsByCustomerID(id int) (models.CustomerImages, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var res models.CustomerImages
+
+	// First, retrieve the customer information
+	customerQuery := `SELECT customer_id, customer_code FROM customer_images WHERE customer_id = $1`
+	row := m.DB.QueryRowContext(ctx, customerQuery, id)
+	err := row.Scan(&res.CustomerId, &res.CustomerCode)
+	if err != nil {
+		return res, err
+	}
+
+	// Now, retrieve the attachments associated with the customer
+	attachmentsQuery := `SELECT file_id, file_path,file_name FROM customer_images WHERE customer_id = $1`
+	rows, err := m.DB.QueryContext(ctx, attachmentsQuery, id)
+	if err != nil {
+		return res, err
+	}
+	defer rows.Close()
+
+	// Create a slice to hold the attachments
+	var attachments []models.Attachment
+
+	for rows.Next() {
+		var attachment models.Attachment
+		if err := rows.Scan(&attachment.File_id, &attachment.FilePath, &attachment.FileName); err != nil {
+			return res, err
+		}
+		attachments = append(attachments, attachment)
+	}
+
+	// Assign the attachments to the customer images
+	res.Attachments = attachments
+
+	if err := rows.Err(); err != nil {
+		return res, err
+	}
+
+	return res, nil
+}
+
+// GetTradeShareInforByID returns trade license shareholder information by customer ID
+// GetTradeShareInforByID returns trade license shareholder information by customer ID
+func (m *postgresDBRepo) GetTradeShareInforByID(id int) ([]models.TradeLicenseHolder, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var shareholders []models.TradeLicenseHolder
+
+	query := `SELECT trade_license_id, customer_id, shareholder_id, customer_code, shareholder_name,
+	shareholder_role, shareholder_nationality, shareholder_no_of_shares, "shareholder_emirateID",
+	emirateid_expire_date, shareholder_passport, passport_expire_date, id_file_path, passport_file_path, 
+	created_at, updated_at
+	FROM trade_license_shareholders where customer_id = $1`
+	rows, err := m.DB.QueryContext(ctx, query, id)
+	if err != nil {
+		fmt.Println("Error executing query:", err)
+		return shareholders, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var i models.TradeLicenseHolder
+		err := rows.Scan(
+			&i.TradeLicenseID,
+			&i.CustomerId,
+			&i.ShareHolderID,
+			&i.CustomerCode,
+			&i.ShareHolderName,
+			&i.ShareHolderRole,
+			&i.ShNationality,
+			&i.ShNoOfShares,
+			&i.ShEmirateID,
+			&i.ShEmIDExp, // Corrected the variable name here
+			&i.ShPassport,
+			&i.ShPassportExp, // Corrected the variable name here
+			&i.ShIDFilepath,
+			&i.ShPassFilepath, // Corrected the variable name here
+			&i.CreatedAt,      // Added the missing fields
+			&i.UpdatedAt,      // Added the missing fields
+		)
+
+		if err != nil {
+			fmt.Println("Error scanning row:", err)
+			return shareholders, err
+		}
+		shareholders = append(shareholders, i)
+	}
+
+	if err = rows.Err(); err != nil {
+		fmt.Println("Error iterating through rows:", err)
+		return shareholders, err
+	}
+
+	fmt.Println("Data retrieved successfully:", shareholders)
+	return shareholders, nil
+}
+
+// GetReservationByID returns one reservation by ID
+func (m *postgresDBRepo) GetTradeLicenseInforByID(id int) (models.TradeLicense, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var res models.TradeLicense
+
+	query := `SELECT trade_license_id, customer_id, emirate, "mohreNo", trade_name, legal_status, establishment_date, registration_date, license_expiray, created_at, updated_at,file_path,file_name,trade_license_no
+	FROM trade_license where customer_id = $1`
+	row := m.DB.QueryRowContext(ctx, query, id)
+	err := row.Scan(
+		&res.TradeLicenseID,
+		&res.CustomerId,
+		&res.Emirate,
+		&res.MohreNo,
+		&res.TradeName,
+		&res.LegalStatus,
+		&res.EstablishDate,
+		&res.RegistrationDate,
+		&res.LicenseExpiry,
+		&res.CreatedAt,
+		&res.UpdatedAt,
+		&res.FilePath,
+		&res.FileName,
+		&res.TradeLicenseNo,
+	)
+
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
+}
+
+func (m *postgresDBRepo) InsertTradeLicense(res models.TradeLicense) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	//
+	var newID int
+	stmt := `insert into trade_license (customer_id, emirate, 
+		"mohreNo", trade_name, legal_status, establishment_date, 
+		registration_date, license_expiray, created_at, updated_at, 
+		file_path, file_name,trade_license_no) 
+		values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) returning trade_license_id`
+
+	err := m.DB.QueryRowContext(ctx, stmt,
+		res.CustomerId,
+		res.Emirate,
+		res.MohreNo,
+		res.TradeName,
+		res.LegalStatus,
+		res.EstablishDate,
+		res.RegistrationDate,
+		res.LicenseExpiry,
+		res.CreatedAt,
+		res.UpdatedAt,
+		res.FilePath,
+		res.FileName,
+		res.TradeLicenseNo,
+	).Scan(&newID)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return newID, nil
+}
+
+func (m *postgresDBRepo) GetMemorandumInforByID(id int) ([]models.Memorandum, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var memorandum []models.Memorandum
+
+	query := `SELECT trade_license_id, customer_id, memorandum_id, customer_code, 
+	representative_name, representative_no_of_shares, "representative_emirateID", 
+	emirateid_expire_date, representative_passport, passport_expire_date, 
+	id_file_path, passport_file_path, created_at, updated_at
+	FROM memorandums where customer_id = $1`
+	rows, err := m.DB.QueryContext(ctx, query, id)
+	if err != nil {
+		fmt.Println("Error executing query:", err)
+		return memorandum, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var i models.Memorandum
+		err := rows.Scan(
+			&i.TradeLicenseID,
+			&i.CustomerId,
+			&i.MemorandumID,
+			&i.CustomerCode,
+			&i.RepresentativeName,
+			&i.RepNoOfShares,
+			&i.RepEmID,
+			&i.RepEmIDExp,
+			&i.RepPassport,
+			&i.RepPassportExp, // Corrected the variable name here
+			&i.RepIDFilepath,
+			&i.RepPassFilepath, // Corrected the variable name here
+			&i.CreatedAt,       // Added the missing fields
+			&i.UpdatedAt,       // Added the missing fields
+		)
+
+		if err != nil {
+			fmt.Println("Error scanning row:", err)
+			return memorandum, err
+		}
+		memorandum = append(memorandum, i)
+	}
+
+	if err = rows.Err(); err != nil {
+		fmt.Println("Error iterating through rows:", err)
+		return memorandum, err
+	}
+
+	fmt.Println("Data retrieved successfully:", memorandum)
+	return memorandum, nil
+}
+
+func (m *postgresDBRepo) InsertPartner(res models.TradeLicenseHolder) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	//
+	var newID int
+	stmt := `insert into customers (trade_license_id, customer_id,  customer_code,
+		 shareholder_name, shareholder_role, 
+		 shareholder_nationality, shareholder_no_of_shares, 
+		 "shareholder_emirateID", emirateid_expire_date, 
+		 shareholder_passport, passport_expire_date, 
+		 id_file_path, passport_file_path) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning shareholder_id`
+
+	err := m.DB.QueryRowContext(ctx, stmt,
+		res.TradeLicenseID,
+		res.CustomerId,
+		res.CustomerCode,
+		res.ShareHolderName,
+		res.ShareHolderRole,
+		res.ShNationality,
+		res.ShNoOfShares,
+		res.ShEmirateID,
+		res.ShEmIDExp,
+		res.ShPassport,
+		res.ShPassportExp,
+		res.ShIDFilepath,
+		res.ShPassFilepath,
+	).Scan(&newID)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return newID, nil
 }

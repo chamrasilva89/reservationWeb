@@ -1,0 +1,118 @@
+{{template "base" .}}
+
+{{define "content"}}
+    <div class="container mt-5">
+        <h1 class="mb-4">Add New Customer</h1>
+    </div>
+     {{$res := index .Data "Customer"}}
+    <form  method="post" action="/add-customer" enctype="multipart/form-data" class="" novalidate>
+     <input type='hidden' name='csrf_token' value="{{.CSRFToken}}">
+     <input type='hidden' name='status' value="Entered">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="customerCode">Customer Code</label>
+                        {{with .Form.Errors.Get "customerCode"}}
+                        <label class="text-danger">{{.}}</label>
+                        {{end}}
+                        <input type="text" name='customerCode' class="form-control {{with .Form.Errors.Get "customerCode"}} is-invalid {{end}}" id="customerCode" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="customerName">Name of the Customer</label>
+                        {{with .Form.Errors.Get "customerName"}}
+                        <label class="text-danger">{{.}}</label>
+                        {{end}}
+                        <input type="text" name='customerName' class="form-control {{with .Form.Errors.Get "customerName"}} is-invalid {{end}}" id="customerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactNo">Contact No</label>
+                        {{with .Form.Errors.Get "contactNo"}}
+                        <label class="text-danger">{{.}}</label>
+                        {{end}}
+                        <input type="tel" name='contactNo' class="form-control {{with .Form.Errors.Get "contactNo"}} is-invalid {{end}}" id="contactNo">
+                    </div>
+                    <div class="form-group">
+                        <label for="contactPerson">Contact Person</label>
+                         {{with .Form.Errors.Get "contactPerson"}}
+                         <label class="text-danger">{{.}}</label>
+                        {{end}}
+                        <input type="text" name='contactPerson' class="form-control {{with .Form.Errors.Get "contactPerson"}} is-invalid {{end}}" id="contactPerson">
+                    </div>
+                    <div class="form-group">
+                        <label for="mobileNo">Mobile No</label>
+                          {{with .Form.Errors.Get "mobileNo"}}
+                          <label class="text-danger">{{.}}</label>
+                          {{end}}
+                        <input type="tel" name='mobileNo' class="form-control {{with .Form.Errors.Get "mobileNo"}} is-invalid {{end}}" id="mobileNo">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="businessName">Business Name</label>
+                        {{with .Form.Errors.Get "businessName"}}
+                        <label class="text-danger">{{.}}</label>
+                        {{end}}
+                        <input type="text" name='businessName' class="form-control {{with .Form.Errors.Get "businessName"}} is-invalid {{end}}" id="businessName">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                         {{with .Form.Errors.Get "email"}}
+                         <label class="text-danger">{{.}}</label>
+                        {{end}}
+                        <input type="email" name='email' class="form-control {{with .Form.Errors.Get "email"}} is-invalid {{end}}" id="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="locationDetails">Location Details</label>
+                        <input type="text" name='locationDetails' class="form-control" id="locationDetails">
+                    </div>
+                    <div class="form-group">
+                        <label for="natureOfBusiness">Nature of Business</label>
+                        {{with .Form.Errors.Get "natureOfBusiness"}}
+                        <label class="text-danger">{{.}}</label>
+                        {{end}}
+                        <textarea name='natureOfBusiness' class="form-control {{with .Form.Errors.Get "natureOfBusiness"}} is-invalid {{end}}" id="natureOfBusiness" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="marketedBy">Marketed by</label>
+                        <input type="text" name='marketedBy' class="form-control" id="marketedBy">
+                    </div>
+                    <div class="form-group">
+                        <label for="marketerName">Marketer Name</label>
+                        <input type="text" name='marketerName' class="form-control" id="marketerName">
+                    </div>
+                    <div class="form-group">
+                        <label for="marketerEmail">Marketer Email</label>
+                        <input type="email" name='marketerEmail' class="form-control" id="marketerEmail">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="photos">Photos (Drag and Drop)</label>
+                        <div id="drop-zone" class="form-control custom-file">
+                            <p class="text-center">Drag and drop files here, or click to select files.</p>
+                            <input type="file" name="photos" multiple class="custom-file-input" id="photos" onchange="displaySelectedFiles(this)">
+                            <label class="custom-file-label" for="photos">Choose file(s)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br/>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" id="cancel" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </form>
+    <script>
+        function displaySelectedFiles(input) {
+            var label = input.nextElementSibling;
+            var fileNames = Array.from(input.files).map(file => file.name);
+            label.innerHTML = fileNames.join(', ');
+        }
+    </script>
+{{end}}

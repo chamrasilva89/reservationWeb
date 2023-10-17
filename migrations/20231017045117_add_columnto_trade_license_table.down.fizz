@@ -1,0 +1,2 @@
+drop_column("trade_license", "file_path")
+drop_column("trade_license", "file_name")

@@ -42,6 +42,17 @@ func routes(app *config.AppConfig) http.Handler {
 	mux.Post("/user/login", handler.Repo.PostShowLogin)
 	mux.Get("/user/logout", handler.Repo.Logout)
 
+	mux.Get("/add-customer", handler.Repo.AddCustomer)
+	mux.Post("/add-customer", handler.Repo.PostCustomer)
+	mux.Get("/customer-all", handler.Repo.AllCustomers)
+	mux.Get("/customer-details/{id}", handler.Repo.ShowCustomerDetails)
+	mux.Get("/customer-trade-license/{id}", handler.Repo.ShowCustomerTradeLicense)
+	mux.Post("/customer-trade-license/{id}", handler.Repo.PostTradeLicense)
+	mux.Get("/customer-partners/{id}", handler.Repo.ShowCustomerPartners)
+	mux.Get("/customer-memorandum/{id}", handler.Repo.ShowCustomerMemorandum)
+	mux.Get("/customer-add-partner/{id}", handler.Repo.AddPartner)
+	mux.Get("/customer-add-memorandum/{id}", handler.Repo.AddPartner)
+	mux.Post("/add-partner", handler.Repo.PostPartner)
 	// Serve static files from the "static" directory
 	fileServer := http.FileServer(http.Dir("./static"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
@@ -56,9 +67,9 @@ func routes(app *config.AppConfig) http.Handler {
 		mux.Post("/reservations-calendar", handler.Repo.AdminPostReservationsCalendar)
 		mux.Get("/process-reservation/{src}/{id}/do", handlers.Repo.AdminProcessReservation)
 		mux.Get("/delete-reservation/{src}/{id}/do", handlers.Repo.AdminDeleteReservation)*/
-		mux.Get("/process-reservation/{src}/{id}/do", handlers.Repo.AdminProcessReservation)
-		mux.Get("/reservations/{src}/{id}/show", handlers.Repo.AdminShowReservation)
-		mux.Post("/reservations/{src}/{id}", handlers.Repo.AdminPostShowReservation)
+		mux.Get("/process-reservation/{src}/{id}/do", handler.Repo.AdminProcessReservation)
+		mux.Get("/reservations/{src}/{id}/show", handler.Repo.AdminShowReservation)
+		mux.Post("/reservations/{src}/{id}", handler.Repo.AdminPostShowReservation)
 	})
 
 	return mux

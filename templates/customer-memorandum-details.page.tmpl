@@ -1,0 +1,57 @@
+{{template "base" .}}
+
+{{define "content"}}
+    <!-- Content -->
+    <div class="container mt-5">
+        <h1 class="mb-4">Representative Details</h1>
+        <a href="/customer-add-memorandum/{{.CustomerID}}" class="btn btn-primary mb-4">Add New</a>
+        {{with index .Data "memorandum"}}
+            <form method="" action="" enctype="multipart/form-data">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Name of the Representatives</th>
+                            <th>EID No</th>
+                            <th>EID Expiry Date</th>
+                            <th>Passport No</th>
+                            <th>Passport Expiry Date</th>
+                            <th>Documents</th>
+                        </tr>
+                    </thead>
+                    <tbody id="memorandumGrid">
+                        <!-- Loop through memorandum records and generate rows -->
+                        {{range .}}
+                            <tr>
+                                <td>{{.RepresentativeName}}</td>
+                                <td>{{.RepEmID}}</td>
+                                <td>{{.RepEmIDExp}}</td>
+                                <td>{{.RepPassport}}</td>
+                                <td>{{.RepPassportExp}}</td>
+                                <td>
+                                    {{if .RepIDFilepath}}
+                                        <a href="{{.RepIDFilepath}}" target="_blank">ID Document</a>
+                                    {{end}}
+                                    {{if .RepPassFilepath}}
+                                        {{if .RepIDFilepath}} | {{end}}
+                                        <a href="{{.RepPassFilepath}}" target="_blank">Passport Document</a>
+                                    {{end}}
+                                </td>
+                            </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" id="cancel" class="btn btn-secondary">Cancel</button>
+            </form>
+        {{end}}
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Your JavaScript code here, including the "Cancel" button event listener.
+        document.getElementById("cancel").addEventListener("click", function () {
+            window.history.back();
+        });
+    });
+    </script>
+{{end}}

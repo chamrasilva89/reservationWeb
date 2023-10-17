@@ -3,8 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +20,8 @@ import (
 	"github.com/chamrasilva89/reservationWeb/internal/render"
 	"github.com/chamrasilva89/reservationWeb/internal/repository"
 	"github.com/chamrasilva89/reservationWeb/internal/repository/dbrepo"
+	"github.com/go-chi/chi"
+	"github.com/google/uuid"
 )
 
 var Repo *Repository
@@ -412,28 +417,671 @@ func (m *Repository) AdminPostShowReservation(w http.ResponseWriter, r *http.Req
 
 // AdminProcessReservation marks a reservation as processed
 func (m *Repository) AdminProcessReservation(w http.ResponseWriter, r *http.Request) {
-    // Extract the 'id' and 'src' parameters from the URL
-    id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-    src := chi.URLParam(r, "src")
-    
-    // Call the UpdateProcessedForReservation method to mark the reservation as processed
-    err := m.DB.UpdateProcessedForReservation(id, 1)
-    if err != nil {
-        log.Println(err)
-    }
+	// Extract the 'id' and 'src' parameters from the URL
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	src := chi.URLParam(r, "src")
 
-    // Get the 'y' and 'm' query parameters from the URL
-    year := r.URL.Query().Get("y")
-    month := r.URL.Query().Get("m")
+	// Call the UpdateProcessedForReservation method to mark the reservation as processed
+	err := m.DB.UpdateProcessedForReservation(id, 1)
+	if err != nil {
+		log.Println(err)
+	}
 
-    // Set a flash message using the session to indicate that the reservation is marked as processed
-    m.App.Session.Put(r.Context(), "flash", "Reservation marked as processed")
+	// Get the 'y' and 'm' query parameters from the URL
+	year := r.URL.Query().Get("y")
+	month := r.URL.Query().Get("m")
 
-    if year == "" {
-        // If 'year' is empty, redirect to the reservations page for the specified 'src'
-        http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
-    } else {
-        // If 'year' is not empty, redirect to the reservations calendar page with 'year' and 'month' query parameters
-        http.Redirect(w, r, fmt.Sprintf("/admin/reservations-calendar?y=%s&m=%s", year, month), http.StatusSeeOther)
-    }
+	// Set a flash message using the session to indicate that the reservation is marked as processed
+	m.App.Session.Put(r.Context(), "flash", "Reservation marked as processed")
+
+	if year == "" {
+		// If 'year' is empty, redirect to the reservations page for the specified 'src'
+		http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+	} else {
+		// If 'year' is not empty, redirect to the reservations calendar page with 'year' and 'month' query parameters
+		http.Redirect(w, r, fmt.Sprintf("/admin/reservations-calendar?y=%s&m=%s", year, month), http.StatusSeeOther)
+	}
+}
+
+func (m *Repository) AddCustomer(w http.ResponseWriter, r *http.Request) {
+	var emptyCustomer models.Customer
+	data := make(map[string]interface{})
+	data["customer"] = emptyCustomer
+	render.Templates(w, r, "add-customer.page.tmpl", &models.TemplateData{
+		Form: forms.New(nil),
+		Data: data,
+	})
+}
+
+func (m *Repository) PostCustomer(w http.ResponseWriter, r *http.Request) {
+	// Parse the form to handle form fields and file uploads
+	err := r.ParseMultipartForm(10 << 20) // 10MB maximum file size
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	// Retrieve the uploaded files
+	files := r.MultipartForm.File["photos"]
+	fmt.Println("Customer intert started ", files)
+	// Create a reservation object with form data
+	customer := models.Customer{
+		CustomerCode:     r.Form.Get("customerCode"),
+		CustomerName:     r.Form.Get("customerName"),
+		ContactNo:        r.Form.Get("contactNo"),
+		ContactPerson:    r.Form.Get("contactPerson"),
+		MobileNo:         r.Form.Get("mobileNo"),
+		BusinessName:     r.Form.Get("businessName"),
+		Email:            r.Form.Get("email"),
+		LocationDetails:  r.Form.Get("locationDetails"),
+		NatureOfBusiness: r.Form.Get("natureOfBusiness"),
+		MarketedBy:       r.Form.Get("marketedBy"),
+		MarketerName:     r.Form.Get("marketerName"),
+		MarketerEmail:    r.Form.Get("marketerEmail"),
+		Status:           r.Form.Get("status"),
+	}
+	fmt.Println("Customer Code:", r.Form.Get("customerCode"))
+	fmt.Println("Customer Name:", r.Form.Get("customerName"))
+	fmt.Println("Customer data", customer.CustomerCode, customer.CustomerName, customer.ContactNo)
+	// Create a form object for validation
+	form := forms.New(r.PostForm)
+
+	// Check required fields and add validation errors
+	form.Required("customerCode", "customerName", "contactPerson", "contactNo", "mobileNo", "email")
+	form.IsEmail("email")
+
+	// If the form is not valid, render the reservation page with validation errors
+	if !form.Valid() {
+		data := make(map[string]interface{})
+		data["customer"] = customer
+
+		render.Templates(w, r, "add-customer.page.tmpl", &models.TemplateData{
+			Form: form,
+			Data: data,
+		})
+		return
+	}
+
+	// Insert the reservation into the database
+	newCustomerID, err := m.DB.InsertCustomer(customer)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	// If files were uploaded, save them in a directory with the customer code
+	if len(files) > 0 {
+		customerCode := r.Form.Get("customerCode")
+		//customerDir := fmt.Sprintf("/path/to/upload_directory/%s", customerCode)
+		customerDir := "E:\\GO\\FF\\" + customerCode
+
+		if err := os.MkdirAll(customerDir, os.ModePerm); err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+
+		for _, file := range files {
+			//uniqueFilename := generateUniqueFilename()
+
+			// Extract the file extension from the original filename
+			originalFilename := file.Filename
+			//fileExtension := filepath.Ext(originalFilename)
+
+			// Append the file extension to the unique filename
+			uniqueFilenameWithExtension := originalFilename
+
+			filePath := filepath.Join(customerDir, uniqueFilenameWithExtension)
+
+			destinationFile, err := os.Create(filePath)
+			if err != nil {
+				helpers.ServerError(w, err)
+				return
+			}
+			defer destinationFile.Close()
+
+			sourceFile, err := file.Open()
+			if err != nil {
+				helpers.ServerError(w, err)
+				return
+			}
+			defer sourceFile.Close()
+
+			_, err = io.Copy(destinationFile, sourceFile)
+			if err != nil {
+				helpers.ServerError(w, err)
+				return
+			}
+			fmt.Println("File name with Extension", uniqueFilenameWithExtension)
+			// Save the file path in the database
+			_, err = m.DB.InsertFile(customerCode, filePath, newCustomerID, uniqueFilenameWithExtension)
+			if err != nil {
+				helpers.ServerError(w, err)
+				return
+			}
+		}
+	}
+
+	m.App.Session.Put(r.Context(), "flash", "New Customer Added Successfully..! ID :"+strconv.Itoa(newCustomerID))
+	// Store the reservation in the session and redirect to the reservation summary page
+	m.App.Session.Put(r.Context(), "customer", customer)
+	http.Redirect(w, r, "/customer-all", http.StatusSeeOther)
+}
+
+func generateUniqueFilename() string {
+	// Generate a UUID to ensure a unique filename
+	id := uuid.New()
+	return id.String()
+}
+
+func (m *Repository) AllCustomers(w http.ResponseWriter, r *http.Request) {
+	customers, err := m.DB.AllCustomers()
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["customer"] = customers
+
+	render.Templates(w, r, "all-customers.page.tmpl", &models.TemplateData{
+		Data: data,
+	})
+}
+
+func (m *Repository) ShowCustomerDetails(w http.ResponseWriter, r *http.Request) {
+	// Split the request URI to extract the customer ID
+	fmt.Println("Inside customer show 1")
+	exploded := strings.Split(r.RequestURI, "/")
+	id, err := strconv.Atoi(exploded[2])
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	fmt.Println("Inside customer show ", id)
+
+	// Get the customer information from the database using the customer ID
+	res, err := m.DB.GetCustomerByID(id)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	// Get the attachments for the customer from the database
+	attachments, err := m.DB.GetAttachmentsByCustomerID(id)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	fmt.Println("attachments", attachments)
+
+	// Create data for rendering the customer details
+	data := make(map[string]interface{})
+	data["customer"] = res
+
+	// Create a slice to store valid attachment file paths
+	validAttachments := []string{}
+
+	// Check if each attachment file exists
+	for _, attachment := range attachments.Attachments {
+		if _, err := os.Stat(attachment.FilePath); err == nil {
+			// The file exists, add it to the validAttachments slice
+			validAttachments = append(validAttachments, attachment.FilePath)
+		}
+	}
+	// Add valid attachments to the data
+	data["attachments"] = validAttachments
+
+	// Render the "customer-details.page.tmpl" template with the data
+	render.Templates(w, r, "customer-details.page.tmpl", &models.TemplateData{
+		Data: data,
+		Form: forms.New(nil),
+	})
+}
+
+func (m *Repository) ShowCustomerTradeLicense(w http.ResponseWriter, r *http.Request) {
+	// Split the request URI to extract the customer ID
+	fmt.Println("Inside Trade License")
+	exploded := strings.Split(r.RequestURI, "/")
+	id, err := strconv.Atoi(exploded[2])
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	data := make(map[string]interface{})
+
+	// Get the trade information from the database using the customer ID
+	res, err := m.DB.GetTradeLicenseInforByID(id)
+	if err != nil {
+		res = models.TradeLicense{} // Modify this to match your data structure
+	}
+	res.CustomerId = id
+	// Create data for rendering the customer details
+	data["tradelicense"] = res
+
+	validAttachments := []string{}
+
+	if _, err := os.Stat(res.FilePath); err == nil {
+		// The file exists, add it to the validAttachments slice
+		validAttachments = append(validAttachments, res.FilePath)
+	}
+	// Add valid attachments to the data
+	data["tradeattachments"] = validAttachments
+
+	// Render the "customer-trade-license.page.tmpl" template with the data
+	render.Templates(w, r, "customer-trade-license.page.tmpl", &models.TemplateData{
+		Data: data,
+		Form: forms.New(nil),
+	})
+}
+
+func (m *Repository) ShowCustomerPartners(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Inside ShowCustomerPartners")
+
+	exploded := strings.Split(r.RequestURI, "/")
+	id, err := strconv.Atoi(exploded[2])
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	fmt.Println("Customer ID:", id)
+
+	data := make(map[string]interface{})
+
+	// Get the trade information from the database using the customer ID
+	fmt.Println("Getting trade information from the database...")
+	res, err := m.DB.GetTradeShareInforByID(id)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	fmt.Println("Trade information retrieved successfully.")
+
+	fmt.Println("Printing trade information:")
+	for _, shareholder := range res {
+		fmt.Printf("Trade License ID: %d\n", shareholder.TradeLicenseID)
+		fmt.Printf("Customer ID: %d\n", shareholder.CustomerId)
+		fmt.Printf("Shareholder ID: %d\n", shareholder.ShareHolderID)
+		fmt.Printf("Customer Code: %s\n", shareholder.ShEmirateID)
+		fmt.Printf("Shareholder Name: %s\n", shareholder.ShareHolderName)
+	}
+
+	// Create data for rendering the customer details
+	data["partners"] = res
+	data["id"] = id
+	validAttachments := []string{}
+
+	// Iterate through partner records
+	for _, partner := range res {
+		if partner.ShIDFilepath != "" {
+			if _, err := os.Stat(partner.ShIDFilepath); err == nil {
+				// The file exists, add it to the validAttachments slice
+				validAttachments = append(validAttachments, partner.ShIDFilepath)
+			}
+		}
+
+		if partner.ShPassFilepath != "" {
+			if _, err := os.Stat(partner.ShPassFilepath); err == nil {
+				// The file exists, add it to the validAttachments slice
+				validAttachments = append(validAttachments, partner.ShPassFilepath)
+			}
+		}
+	}
+
+	fmt.Println("Valid Attachments:")
+	for _, attachment := range validAttachments {
+		fmt.Println(attachment)
+	}
+
+	// Render the "customer-partner-details.tmpl" template with the data
+	render.Templates(w, r, "customer-partner-details.page.tmpl", &models.TemplateData{
+		Data:       data,
+		Form:       forms.New(nil),
+		CustomerID: id,
+	})
+}
+
+func (m *Repository) ShowCustomerMemorandum(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Inside ShowCustomerMemorandum")
+
+	exploded := strings.Split(r.RequestURI, "/")
+	id, err := strconv.Atoi(exploded[2])
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	fmt.Println("Customer ID:", id)
+
+	data := make(map[string]interface{})
+
+	// Get the trade information from the database using the customer ID
+	fmt.Println("Getting trade information from the database...")
+	res, err := m.DB.GetMemorandumInforByID(id)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	fmt.Println("Trade information retrieved successfully.")
+
+	fmt.Println("Printing trade information:")
+	for _, memorandum := range res {
+		fmt.Printf("Trade License ID: %d\n", memorandum.TradeLicenseID)
+		fmt.Printf("Customer ID: %d\n", memorandum.CustomerId)
+		fmt.Printf("Representative: %s\n", memorandum.RepresentativeName)
+		fmt.Printf("EMI ID: %s\n", memorandum.RepEmID)
+		fmt.Printf("Passsport: %s\n", memorandum.RepPassport)
+	}
+
+	// Create data for rendering the customer details
+	data["memorandum"] = res
+	data["id"] = id
+
+	validAttachments := []string{}
+
+	// Iterate through partner records
+	for _, partner := range res {
+		if partner.RepIDFilepath != "" {
+			if _, err := os.Stat(partner.RepIDFilepath); err == nil {
+				// The file exists, add it to the validAttachments slice
+				validAttachments = append(validAttachments, partner.RepIDFilepath)
+			}
+		}
+
+		if partner.RepPassFilepath != "" {
+			if _, err := os.Stat(partner.RepPassFilepath); err == nil {
+				// The file exists, add it to the validAttachments slice
+				validAttachments = append(validAttachments, partner.RepPassFilepath)
+			}
+		}
+	}
+
+	fmt.Println("Valid Attachments:")
+	for _, attachment := range validAttachments {
+		fmt.Println(attachment)
+	}
+
+	// Render the "customer-partner-details.tmpl" template with the data
+	render.Templates(w, r, "customer-memorandum-details.page.tmpl", &models.TemplateData{
+		Data:       data,
+		Form:       forms.New(nil),
+		CustomerID: id,
+	})
+}
+
+func (m *Repository) PostTradeLicense(w http.ResponseWriter, r *http.Request) {
+	// Parse the form to handle form fields and file uploads
+	fmt.Println("Trade Post Started")
+	err := r.ParseMultipartForm(10 << 20) // 10MB maximum file size
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	// Retrieve the uploaded files
+	files := r.MultipartForm.File["photos"]
+	var filePath string
+	var fileName string
+	fmt.Println("Trade Post Started 2", files)
+	// Create a customer ID as an integer
+	customerIDStr := r.Form.Get("customerId")
+	customerIDint, err := strconv.Atoi(customerIDStr)
+	if err != nil {
+		customerIDint = 0
+	}
+	fmt.Println("Trade Post Started 3", customerIDStr)
+	// Parse date fields
+	parseDate := func(fieldName string) (time.Time, error) {
+		dateStr := r.Form.Get(fieldName)
+		if dateStr == "" {
+			return time.Time{}, nil
+		}
+		return time.Parse("2006-01-02", dateStr)
+	}
+
+	establishmentDate, _ := parseDate("establishmentDate")
+	registrationDate, _ := parseDate("registrationDate")
+	licenseExpiryDate, _ := parseDate("licenseExpiryDate")
+	fmt.Println("Trade Post Started 4", establishmentDate, registrationDate, licenseExpiryDate)
+	// If files were uploaded, save them in a directory with the customer code
+	if len(files) == 1 {
+		customerCode := customerIDStr
+		tradeLicenseDir := r.Form.Get("tradelicenseid")
+		customerDir := fmt.Sprintf("E:\\GO\\FF\\%s\\%s", customerCode, tradeLicenseDir)
+
+		if err := os.MkdirAll(customerDir, os.ModePerm); err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+
+		file := files[0] // Assuming the file slice contains only one file
+
+		// Use the original filename as it is
+		filePath = filepath.Join(customerDir, file.Filename)
+		fileName = file.Filename
+		destinationFile, err := os.Create(filePath)
+		if err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+		defer destinationFile.Close()
+
+		sourceFile, err := file.Open()
+		if err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+		defer sourceFile.Close()
+
+		_, err = io.Copy(destinationFile, sourceFile)
+		if err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+
+		fmt.Println("File name with Extension", file.Filename)
+	}
+
+	// Create a trade license object with form data
+	tradeLicense := models.TradeLicense{
+		CustomerId:       customerIDint,
+		Emirate:          r.Form.Get("emirate"),
+		TradeLicenseNo:   r.Form.Get("tradelicenseid"),
+		MohreNo:          r.Form.Get("mohreno"),
+		EstablishDate:    establishmentDate,
+		RegistrationDate: registrationDate,
+		LicenseExpiry:    licenseExpiryDate,
+		TradeName:        r.Form.Get("tradeName"),
+		LegalStatus:      r.Form.Get("legalState"),
+		FilePath:         filePath,
+		FileName:         fileName,
+	}
+
+	// Create a form object for validation
+	form := forms.New(r.PostForm)
+
+	// Check required fields and add validation errors
+	form.Required("tradelicenseid", "licenseExpiryDate", "mohreno")
+
+	// If the form is not valid, render the trade license page with validation errors
+	if !form.Valid() {
+		data := make(map[string]interface{})
+		data["tradelicense"] = tradeLicense
+
+		render.Templates(w, r, "customer-trade-license.page.tmpl", &models.TemplateData{
+			Form: form,
+			Data: data,
+		})
+		return
+	}
+
+	// Insert the trade license into the database
+	newTradeLicenseID, err := m.DB.InsertTradeLicense(tradeLicense)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	// Set flash message and redirect
+	m.App.Session.Put(r.Context(), "flash", "New Trade License Added Successfully. ID: "+strconv.Itoa(newTradeLicenseID))
+	http.Redirect(w, r, "/customer-all", http.StatusSeeOther)
+}
+
+func (m *Repository) AddPartner(w http.ResponseWriter, r *http.Request) {
+	var emptyCustomer models.TradeLicenseHolder
+	data := make(map[string]interface{})
+	data["partner"] = emptyCustomer
+	render.Templates(w, r, "customer-add-partner.page.tmpl", &models.TemplateData{
+		Form: forms.New(nil),
+		Data: data,
+	})
+}
+
+func (m *Repository) AddMemorandum(w http.ResponseWriter, r *http.Request) {
+	var emptyCustomer models.Memorandum
+	data := make(map[string]interface{})
+	data["memorandum"] = emptyCustomer
+	render.Templates(w, r, "customer-add-memorandum.page.tmpl", &models.TemplateData{
+		Form: forms.New(nil),
+		Data: data,
+	})
+}
+
+func (m *Repository) PostPartner(w http.ResponseWriter, r *http.Request) {
+	// Parse the form to handle form fields and file uploads
+	err := r.ParseMultipartForm(10 << 20) // 10MB maximum file size
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	// Retrieve the uploaded files
+	idfiles := r.MultipartForm.File["shIDFilepath"]
+	passfiles := r.MultipartForm.File["ShPassFilepath"]
+	//
+	var IDfilePath string
+	var PassfilePath string
+	// Parse date fields
+	parseDate := func(fieldName string) (time.Time, error) {
+		dateStr := r.Form.Get(fieldName)
+		if dateStr == "" {
+			return time.Time{}, nil
+		}
+		return time.Parse("2006-01-02", dateStr)
+	}
+	//
+	idExpireDate, _ := parseDate("shEmIDExp")
+	passExpireDate, _ := parseDate("shPassportExp")
+	// Retrieve the uploaded files
+	if len(idfiles) == 1 {
+		customerIDStr := r.Form.Get("customerId")
+		customerCode := customerIDStr
+		partnerDir := "partners"
+		customerDir := fmt.Sprintf("E:\\GO\\FF\\%s\\%s", customerCode, partnerDir)
+
+		if err := os.MkdirAll(customerDir, os.ModePerm); err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+
+		file := idfiles[0] // Assuming the file slice contains only one file
+
+		// Use the original filename as it is
+		IDfilePath = filepath.Join(customerDir, file.Filename)
+		destinationFile, err := os.Create(IDfilePath)
+		if err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+		defer destinationFile.Close()
+
+		sourceFile, err := file.Open()
+		if err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+		defer sourceFile.Close()
+
+		_, err = io.Copy(destinationFile, sourceFile)
+		if err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+
+		fmt.Println("Added ID file :", file.Filename)
+	}
+	if len(passfiles) == 1 {
+		customerIDStr := r.Form.Get("customerId")
+		customerCode := customerIDStr
+		partnerDir := "partners"
+		customerDir := fmt.Sprintf("E:\\GO\\FF\\%s\\%s", customerCode, partnerDir)
+
+		if err := os.MkdirAll(customerDir, os.ModePerm); err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+
+		file := passfiles[0] // Assuming the file slice contains only one file
+
+		// Use the original filename as it is
+		PassfilePath = filepath.Join(customerDir, file.Filename)
+		destinationFile, err := os.Create(PassfilePath)
+		if err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+		defer destinationFile.Close()
+
+		sourceFile, err := file.Open()
+		if err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+		defer sourceFile.Close()
+
+		_, err = io.Copy(destinationFile, sourceFile)
+		if err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+
+		fmt.Println("Added Passport File :", file.Filename)
+	}
+	// Create a reservation object with form data
+	partner := models.TradeLicenseHolder{
+		CustomerCode:    r.Form.Get("customerCode"),
+		CustomerName:    r.Form.Get("customerName"),
+		ShareHolderName: r.Form.Get("ShareHolderName"),
+		ShEmirateID:     r.Form.Get("shEmirateID"),
+		ShEmIDExp:       idExpireDate,
+		ShIDFilepath:    IDfilePath,
+		ShPassport:      r.Form.Get("shPassport"),
+		ShPassportExp:   passExpireDate,
+		ShPassFilepath:  PassfilePath,
+	}
+	fmt.Println("Customer Code:", r.Form.Get("customerCode"))
+	fmt.Println("Customer Name:", r.Form.Get("customerName"))
+	// Create a form object for validation
+	form := forms.New(r.PostForm)
+
+	// Check required fields and add validation errors
+	form.Required("ShareHolderName", "shEmirateID", "shPassport")
+	// If the form is not valid, render the reservation page with validation errors
+	if !form.Valid() {
+		data := make(map[string]interface{})
+		data["partners"] = partner
+
+		render.Templates(w, r, "customer-add-partner.page.tmpl", &models.TemplateData{
+			Form: form,
+			Data: data,
+		})
+		return
+	}
+
+	// Insert the reservation into the database
+	newCustomerID, err := m.DB.InsertPartner(partner)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	m.App.Session.Put(r.Context(), "flash", "New Partner Added Successfully..! ID :"+strconv.Itoa(newCustomerID))
+	// Store the reservation in the session and redirect to the reservation summary page
+	m.App.Session.Put(r.Context(), "partner", partner)
+	http.Redirect(w, r, "/customer-all", http.StatusSeeOther)
 }

@@ -32,42 +32,40 @@
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="/">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/about">About</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                           data-bs-toggle="dropdown" aria-expanded="false">
-                            Rooms
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="/generals-quarters">General's Quarters</a></li>
-                            <li><a class="dropdown-item" href="/majors-suite">Major's Suite</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/search-availability">Search Availability</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/contact">Contact</a>
+                        {{if eq .IsAuthenticated 1}}
+                         <a class="nav-link active" aria-current="page" href="/">Home</a>
+                        {{end}}
                     </li>
                     <li class="nav-item">
                         {{if eq .IsAuthenticated 1}}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                           data-bs-toggle="dropdown"
-                           aria-expanded="false">
-                            Admin
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="/admin/dashboard">Dashboard</a></li>
-                            <li><a class="dropdown-item" href="/user/logout">Logout</a></li>
-                        </ul>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                                Customer
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <li><a class="dropdown-item" href="/add-customer">Add Customers</a></li>
+                                <li><a class="dropdown-item" href="/customer-all">View Customers</a></li>
+                            </ul>
+                        </li>
+                        {{end}}
                     </li>
+                    <li class="nav-item">
+                     {{if eq .IsAuthenticated 1}}
+                        <a class="nav-link" href="/about">Projects</a>
+                        {{end}}
+                    </li>
+                    <li class="nav-item">
+                        {{if eq .IsAuthenticated 1}}
+                        <a class="nav-link" href="/admin/dashboard">Admin</a>
+                        {{end}}
+                    </li>
+                    <li class="nav-item">
+                    {{if eq .IsAuthenticated 1}}
+                        <a class="nav-link" href="/user/logout">Logout</a>
                     {{else}}
-                        <a class="nav-link" href="/user/login" tabindex="-1" aria-disabled="true">Login</a>
+                        <a class="nav-link" href="/user/login">Login</a>
                     {{end}}
                     </li>
                 </ul>
@@ -83,20 +81,13 @@
     <footer class="row my-footer">
         <div class="row">
             <div class="col text-center">
-                <strong>Fort Smythe Bed &amp; Breakfast</strong><br>
-                100 Rocky Road<br>
-                Northbrook, Ontario<br>
-                Canada<br>
-                (416) 555-1212<br>
-                <a href="mailto:info@fsbb.ca">info@fsbb.ca</a>
+               
             </div>
-
             <div class="col">
 
             </div>
 
             <div class="col text-center">
-                <strong>Your home away<br>from home</strong>
             </div>
         </div>
     </footer>

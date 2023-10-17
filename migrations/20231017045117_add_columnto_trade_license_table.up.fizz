@@ -1,0 +1,2 @@
+add_column("trade_license", "file_path", "string", {"default": ""})
+add_column("trade_license", "file_name", "string", {"default": ""})

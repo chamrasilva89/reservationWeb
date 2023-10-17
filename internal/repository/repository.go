@@ -24,4 +24,15 @@ type DatabaseRepo interface {
 	UpdateReservation(u models.Reservation) error
 	DeleteReservation(id int) error
 	UpdateProcessedForReservation(id, processed int) error
+
+	InsertCustomer(res models.Customer) (int, error)
+	AllCustomers() ([]models.Customer, error)
+	InsertFile(customerCode, filePath string, customerId int, uniqueFilenameWithExtension string) (int, error)
+	GetCustomerByID(id int) (models.Customer, error)
+	GetAttachmentsByCustomerID(id int) (models.CustomerImages, error)
+	GetTradeShareInforByID(id int) ([]models.TradeLicenseHolder, error)
+	GetTradeLicenseInforByID(id int) (models.TradeLicense, error)
+	InsertTradeLicense(res models.TradeLicense) (int, error)
+	GetMemorandumInforByID(id int) ([]models.Memorandum, error)
+	InsertPartner(res models.TradeLicenseHolder) (int, error)
 }

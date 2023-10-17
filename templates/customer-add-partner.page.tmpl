@@ -1,0 +1,66 @@
+{{template "base" .}}
+
+{{define "content"}}
+    <div class="container mt-5">
+        <h1 class="mb-4">Add New Partner</h1>
+    </div>
+    {{$res := index .Data "partners"}}
+    <form method="post" action="/add-partner" enctype="multipart/form-data" class="" novalidate>
+        <input type='hidden' name='csrf_token' value="{{.CSRFToken}}">
+        <input type='hidden' name='status' value="Entered">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="ShareHolderName">Shareholder Name</label>
+                        <input type="text" name='shareHolderName' class="form-control" id="ShareHolderName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="ShEmirateID">Emirate ID</label>
+                        <input type="text" name='shEmirateID' class="form-control" id="ShEmirateID" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="ShEmIDExp">Emirate ID Expiry Date</label>
+                        <input type="date" name='shEmIDExp' class="form-control" id="ShEmIDExp">
+                    </div>
+                    <div class="form-group">
+                        <label for="ShIDFilepath">Upload Emirate ID</label>
+                        <input type="file" name='shIDFilepath' class="custom-file-input" id="ShIDFilepath">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="ShPassport">Passport</label>
+                        <input type="text" name='shPassport' class="form-control" id="ShPassport">
+                    </div>
+                    <div class="form-group">
+                        <label for="ShPassportExp">Passport Expiry Date</label>
+                        <input type="date" name='shPassportExp' class="form-control" id="ShPassportExp">
+                    </div>
+                    <div class="form-group">
+                        <label for="ShPassFilepath">Upload Passport</label>
+                        <input type="file" name='shPassFilepath' class="custom-file-input" id="ShPassFilepath">
+                    </div>
+                </div>
+            </div>
+            <br/>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" id="cancel" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </form>
+    <script>
+        function displaySelectedFiles(input) {
+            var label = input.nextElementSibling;
+            var fileNames = Array.from(input.files).map(file => file.name);
+            label.innerHTML = fileNames.join(', ');
+        }
+      document.addEventListener("DOMContentLoaded", function () {
+        // Your JavaScript code here, including the "Cancel" button event listener.
+        document.getElementById("cancel").addEventListener("click", function () {
+            window.history.back();
+        });
+    });
+    </script>
+{{end}}
