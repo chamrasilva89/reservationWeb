@@ -35,4 +35,6 @@ type DatabaseRepo interface {
 	InsertTradeLicense(res models.TradeLicense) (int, error)
 	GetMemorandumInforByID(id int) ([]models.Memorandum, error)
 	InsertPartner(res models.TradeLicenseHolder) (int, error)
+	GetCustomerCodeByID(id int) (string, error)
+	InsertMemorandum(res models.Memorandum) (int, error)
 }

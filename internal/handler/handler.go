@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -511,11 +513,14 @@ func (m *Repository) PostCustomer(w http.ResponseWriter, r *http.Request) {
 	if len(files) > 0 {
 		customerCode := r.Form.Get("customerCode")
 		//customerDir := fmt.Sprintf("/path/to/upload_directory/%s", customerCode)
-		customerDir := "E:\\GO\\FF\\" + customerCode
-
-		if err := os.MkdirAll(customerDir, os.ModePerm); err != nil {
-			helpers.ServerError(w, err)
-			return
+		//customerDir := "E:\\GO\\FF\\" + customerCode
+		customerDir := fmt.Sprintf("%s\\%s", config.FileUploadPath, customerCode)
+		if _, err := os.Stat(customerDir); os.IsNotExist(err) {
+			// The directory doesn't exist, so create it
+			if err := os.MkdirAll(customerDir, os.ModePerm); err != nil {
+				helpers.ServerError(w, err)
+				return
+			}
 		}
 
 		for _, file := range files {
@@ -562,7 +567,7 @@ func (m *Repository) PostCustomer(w http.ResponseWriter, r *http.Request) {
 	m.App.Session.Put(r.Context(), "flash", "New Customer Added Successfully..! ID :"+strconv.Itoa(newCustomerID))
 	// Store the reservation in the session and redirect to the reservation summary page
 	m.App.Session.Put(r.Context(), "customer", customer)
-	http.Redirect(w, r, "/customer-all", http.StatusSeeOther)
+	http.Redirect(w, r, "/customer/all", http.StatusSeeOther)
 }
 
 func generateUniqueFilename() string {
@@ -590,7 +595,7 @@ func (m *Repository) ShowCustomerDetails(w http.ResponseWriter, r *http.Request)
 	// Split the request URI to extract the customer ID
 	fmt.Println("Inside customer show 1")
 	exploded := strings.Split(r.RequestURI, "/")
-	id, err := strconv.Atoi(exploded[2])
+	id, err := strconv.Atoi(exploded[3])
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
@@ -599,14 +604,26 @@ func (m *Repository) ShowCustomerDetails(w http.ResponseWriter, r *http.Request)
 
 	// Get the customer information from the database using the customer ID
 	res, err := m.DB.GetCustomerByID(id)
+
 	if err != nil {
+		if err == sql.ErrNoRows {
+			// Handle the "no rows in result set" error by rendering an empty page
+			render.Templates(w, r, "empty-page.tmpl", &models.TemplateData{})
+			return
+		}
 		helpers.ServerError(w, err)
 		return
 	}
 
 	// Get the attachments for the customer from the database
 	attachments, err := m.DB.GetAttachmentsByCustomerID(id)
+
 	if err != nil {
+		if err == sql.ErrNoRows {
+			// Handle the "no rows in result set" error by rendering an empty page
+			render.Templates(w, r, "empty-page.tmpl", &models.TemplateData{})
+			return
+		}
 		helpers.ServerError(w, err)
 		return
 	}
@@ -626,6 +643,7 @@ func (m *Repository) ShowCustomerDetails(w http.ResponseWriter, r *http.Request)
 			validAttachments = append(validAttachments, attachment.FilePath)
 		}
 	}
+
 	// Add valid attachments to the data
 	data["attachments"] = validAttachments
 
@@ -640,7 +658,7 @@ func (m *Repository) ShowCustomerTradeLicense(w http.ResponseWriter, r *http.Req
 	// Split the request URI to extract the customer ID
 	fmt.Println("Inside Trade License")
 	exploded := strings.Split(r.RequestURI, "/")
-	id, err := strconv.Atoi(exploded[2])
+	id, err := strconv.Atoi(exploded[3])
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
@@ -677,7 +695,7 @@ func (m *Repository) ShowCustomerPartners(w http.ResponseWriter, r *http.Request
 	fmt.Println("Inside ShowCustomerPartners")
 
 	exploded := strings.Split(r.RequestURI, "/")
-	id, err := strconv.Atoi(exploded[2])
+	id, err := strconv.Atoi(exploded[3])
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
@@ -743,7 +761,7 @@ func (m *Repository) ShowCustomerMemorandum(w http.ResponseWriter, r *http.Reque
 	fmt.Println("Inside ShowCustomerMemorandum")
 
 	exploded := strings.Split(r.RequestURI, "/")
-	id, err := strconv.Atoi(exploded[2])
+	id, err := strconv.Atoi(exploded[3])
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
@@ -808,8 +826,14 @@ func (m *Repository) ShowCustomerMemorandum(w http.ResponseWriter, r *http.Reque
 
 func (m *Repository) PostTradeLicense(w http.ResponseWriter, r *http.Request) {
 	// Parse the form to handle form fields and file uploads
+	exploded := strings.Split(r.RequestURI, "/")
+	id, err := strconv.Atoi(exploded[3])
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
 	fmt.Println("Trade Post Started")
-	err := r.ParseMultipartForm(10 << 20) // 10MB maximum file size
+	err = r.ParseMultipartForm(10 << 20) // 10MB maximum file size
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
@@ -842,13 +866,19 @@ func (m *Repository) PostTradeLicense(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Trade Post Started 4", establishmentDate, registrationDate, licenseExpiryDate)
 	// If files were uploaded, save them in a directory with the customer code
 	if len(files) == 1 {
-		customerCode := customerIDStr
-		tradeLicenseDir := r.Form.Get("tradelicenseid")
-		customerDir := fmt.Sprintf("E:\\GO\\FF\\%s\\%s", customerCode, tradeLicenseDir)
-
-		if err := os.MkdirAll(customerDir, os.ModePerm); err != nil {
+		customerCode, err := m.DB.GetCustomerCodeByID(id)
+		if err != nil {
 			helpers.ServerError(w, err)
 			return
+		}
+		tradeLicenseDir := r.Form.Get("tradelicenseid")
+		//customerDir := fmt.Sprintf("E:\\GO\\FF\\%s\\%s", customerCode, tradeLicenseDir)
+		customerDir := fmt.Sprintf("%s%s\\%s", config.FileUploadPath, customerCode, tradeLicenseDir)
+		if _, err := os.Stat(customerDir); os.IsNotExist(err) {
+			if err := os.MkdirAll(customerDir, os.ModePerm); err != nil {
+				helpers.ServerError(w, err)
+				return
+			}
 		}
 
 		file := files[0] // Assuming the file slice contains only one file
@@ -921,42 +951,83 @@ func (m *Repository) PostTradeLicense(w http.ResponseWriter, r *http.Request) {
 
 	// Set flash message and redirect
 	m.App.Session.Put(r.Context(), "flash", "New Trade License Added Successfully. ID: "+strconv.Itoa(newTradeLicenseID))
-	http.Redirect(w, r, "/customer-all", http.StatusSeeOther)
+	http.Redirect(w, r, "/customer/all", http.StatusSeeOther)
 }
 
 func (m *Repository) AddPartner(w http.ResponseWriter, r *http.Request) {
-	var emptyCustomer models.TradeLicenseHolder
-	data := make(map[string]interface{})
-	data["partner"] = emptyCustomer
-	render.Templates(w, r, "customer-add-partner.page.tmpl", &models.TemplateData{
-		Form: forms.New(nil),
-		Data: data,
-	})
-}
-
-func (m *Repository) AddMemorandum(w http.ResponseWriter, r *http.Request) {
-	var emptyCustomer models.Memorandum
-	data := make(map[string]interface{})
-	data["memorandum"] = emptyCustomer
-	render.Templates(w, r, "customer-add-memorandum.page.tmpl", &models.TemplateData{
-		Form: forms.New(nil),
-		Data: data,
-	})
-}
-
-func (m *Repository) PostPartner(w http.ResponseWriter, r *http.Request) {
-	// Parse the form to handle form fields and file uploads
-	err := r.ParseMultipartForm(10 << 20) // 10MB maximum file size
+	exploded := strings.Split(r.RequestURI, "/")
+	id, err := strconv.Atoi(exploded[3])
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
 	}
+	var emptyCustomer models.TradeLicenseHolder
+	data := make(map[string]interface{})
+	data["partner"] = emptyCustomer
+	render.Templates(w, r, "customer-add-partner.page.tmpl", &models.TemplateData{
+		Form:       forms.New(nil),
+		Data:       data,
+		CustomerID: id,
+	})
+}
+
+func (m *Repository) AddMemorandum(w http.ResponseWriter, r *http.Request) {
+	exploded := strings.Split(r.RequestURI, "/")
+	id, err := strconv.Atoi(exploded[3])
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	customerCode, err := m.DB.GetCustomerCodeByID(id)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	var emptyCustomer models.Memorandum
+	data := make(map[string]interface{})
+	data["memorandum"] = emptyCustomer
+	data["CustomerCode"] = customerCode
+	render.Templates(w, r, "customer-add-memorandum.page.tmpl", &models.TemplateData{
+		Form:       forms.New(nil),
+		Data:       data,
+		CustomerID: id,
+	})
+}
+
+func (m *Repository) PostPartner(w http.ResponseWriter, r *http.Request) {
+	// Extract the customer ID from the request URI
+	exploded := strings.Split(r.RequestURI, "/")
+	if len(exploded) < 3 {
+		// Handle the case where there are not enough segments in the URI.
+		http.Error(w, "Invalid request URI", http.StatusBadRequest)
+		fmt.Println("Invalid request URI")
+		return
+	}
+
+	id, err := strconv.Atoi(exploded[3])
+	if err != nil {
+		helpers.ServerError(w, err)
+		fmt.Println("Error converting ID:", err)
+		return
+	}
+	fmt.Println("PostPartner", id)
+
+	// Parse the form to handle form fields and file uploads
+	err = r.ParseMultipartForm(10 << 20) // 10MB maximum file size
+	if err != nil {
+		helpers.ServerError(w, err)
+		fmt.Println("Error parsing form:", err)
+		return
+	}
+
 	// Retrieve the uploaded files
 	idfiles := r.MultipartForm.File["shIDFilepath"]
 	passfiles := r.MultipartForm.File["ShPassFilepath"]
-	//
-	var IDfilePath string
-	var PassfilePath string
+
+	var idfilePath string
+	var passfilePath string
+	var customerCode string
 	// Parse date fields
 	parseDate := func(fieldName string) (time.Time, error) {
 		dateStr := r.Form.Get(fieldName)
@@ -965,103 +1036,92 @@ func (m *Repository) PostPartner(w http.ResponseWriter, r *http.Request) {
 		}
 		return time.Parse("2006-01-02", dateStr)
 	}
-	//
+
 	idExpireDate, _ := parseDate("shEmIDExp")
 	passExpireDate, _ := parseDate("shPassportExp")
-	// Retrieve the uploaded files
-	if len(idfiles) == 1 {
-		customerIDStr := r.Form.Get("customerId")
-		customerCode := customerIDStr
-		partnerDir := "partners"
-		customerDir := fmt.Sprintf("E:\\GO\\FF\\%s\\%s", customerCode, partnerDir)
 
-		if err := os.MkdirAll(customerDir, os.ModePerm); err != nil {
-			helpers.ServerError(w, err)
-			return
+	// Function to handle file uploads
+	handleFileUpload := func(files []*multipart.FileHeader, filePath *string) {
+		if len(files) == 1 {
+			customerCode, err = m.DB.GetCustomerCodeByID(id)
+			if err != nil {
+				helpers.ServerError(w, err)
+				fmt.Println("Error getting customer code:", err)
+				return
+			}
+
+			partnerDir := "partners"
+			//customerDir := fmt.Sprintf("E:\\GO\\FF\\%s\\%s", customerCode, partnerDir)
+			customerDir := fmt.Sprintf("%s%s\\%s", config.FileUploadPath, customerCode, partnerDir)
+			if _, err := os.Stat(customerDir); os.IsNotExist(err) {
+				if err := os.MkdirAll(customerDir, os.ModePerm); err != nil {
+					helpers.ServerError(w, err)
+					fmt.Println("Error creating customer directory:", err)
+					return
+				}
+			}
+
+			file := files[0] // Assuming the file slice contains only one file
+
+			// Use the original filename as it is
+			*filePath = filepath.Join(customerDir, file.Filename)
+			destinationFile, err := os.Create(*filePath)
+			if err != nil {
+				helpers.ServerError(w, err)
+				fmt.Println("Error creating destination file:", err)
+				return
+			}
+			defer destinationFile.Close()
+
+			sourceFile, err := file.Open()
+			if err != nil {
+				helpers.ServerError(w, err)
+				fmt.Println("Error opening source file:", err)
+				return
+			}
+			defer sourceFile.Close()
+
+			_, err = io.Copy(destinationFile, sourceFile)
+			if err != nil {
+				helpers.ServerError(w, err)
+				fmt.Println("Error copying files:", err)
+				return
+			}
+
+			fmt.Printf("Added file: %s\n", file.Filename)
 		}
-
-		file := idfiles[0] // Assuming the file slice contains only one file
-
-		// Use the original filename as it is
-		IDfilePath = filepath.Join(customerDir, file.Filename)
-		destinationFile, err := os.Create(IDfilePath)
-		if err != nil {
-			helpers.ServerError(w, err)
-			return
-		}
-		defer destinationFile.Close()
-
-		sourceFile, err := file.Open()
-		if err != nil {
-			helpers.ServerError(w, err)
-			return
-		}
-		defer sourceFile.Close()
-
-		_, err = io.Copy(destinationFile, sourceFile)
-		if err != nil {
-			helpers.ServerError(w, err)
-			return
-		}
-
-		fmt.Println("Added ID file :", file.Filename)
 	}
-	if len(passfiles) == 1 {
-		customerIDStr := r.Form.Get("customerId")
-		customerCode := customerIDStr
-		partnerDir := "partners"
-		customerDir := fmt.Sprintf("E:\\GO\\FF\\%s\\%s", customerCode, partnerDir)
 
-		if err := os.MkdirAll(customerDir, os.ModePerm); err != nil {
-			helpers.ServerError(w, err)
-			return
-		}
+	// Handle file uploads for ID and Passport
+	handleFileUpload(idfiles, &idfilePath)
+	handleFileUpload(passfiles, &passfilePath)
 
-		file := passfiles[0] // Assuming the file slice contains only one file
-
-		// Use the original filename as it is
-		PassfilePath = filepath.Join(customerDir, file.Filename)
-		destinationFile, err := os.Create(PassfilePath)
-		if err != nil {
-			helpers.ServerError(w, err)
-			return
-		}
-		defer destinationFile.Close()
-
-		sourceFile, err := file.Open()
-		if err != nil {
-			helpers.ServerError(w, err)
-			return
-		}
-		defer sourceFile.Close()
-
-		_, err = io.Copy(destinationFile, sourceFile)
-		if err != nil {
-			helpers.ServerError(w, err)
-			return
-		}
-
-		fmt.Println("Added Passport File :", file.Filename)
-	}
 	// Create a reservation object with form data
 	partner := models.TradeLicenseHolder{
-		CustomerCode:    r.Form.Get("customerCode"),
+		CustomerId:      id,
+		CustomerCode:    customerCode,
 		CustomerName:    r.Form.Get("customerName"),
-		ShareHolderName: r.Form.Get("ShareHolderName"),
+		ShareHolderRole: r.Form.Get("shareHolderRole"),
+		ShNationality:   r.Form.Get("shareHolderNationality"),
+		ShareHolderName: r.Form.Get("shareHolderName"),
 		ShEmirateID:     r.Form.Get("shEmirateID"),
 		ShEmIDExp:       idExpireDate,
-		ShIDFilepath:    IDfilePath,
+		ShIDFilepath:    idfilePath,
 		ShPassport:      r.Form.Get("shPassport"),
 		ShPassportExp:   passExpireDate,
-		ShPassFilepath:  PassfilePath,
+		ShPassFilepath:  passfilePath,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
-	fmt.Println("Customer Code:", r.Form.Get("customerCode"))
-	fmt.Println("Customer Name:", r.Form.Get("customerName"))
+	fmt.Println("Partner emi File:", idfilePath)
+	fmt.Println("partner pass file:", passfilePath)
+
 	// Create a form object for validation
 	form := forms.New(r.PostForm)
 
 	// Check required fields and add validation errors
-	form.Required("ShareHolderName", "shEmirateID", "shPassport")
+	form.Required("shareHolderName", "shEmirateID", "shPassport")
+
 	// If the form is not valid, render the reservation page with validation errors
 	if !form.Valid() {
 		data := make(map[string]interface{})
@@ -1078,10 +1138,165 @@ func (m *Repository) PostPartner(w http.ResponseWriter, r *http.Request) {
 	newCustomerID, err := m.DB.InsertPartner(partner)
 	if err != nil {
 		helpers.ServerError(w, err)
+		fmt.Println("Error inserting partner:", err)
 		return
 	}
+	url := fmt.Sprintf("/customer/partners/%d", id)
 	m.App.Session.Put(r.Context(), "flash", "New Partner Added Successfully..! ID :"+strconv.Itoa(newCustomerID))
+
 	// Store the reservation in the session and redirect to the reservation summary page
 	m.App.Session.Put(r.Context(), "partner", partner)
-	http.Redirect(w, r, "/customer-all", http.StatusSeeOther)
+	http.Redirect(w, r, url, http.StatusSeeOther)
+}
+
+func (m *Repository) PostRepresentative(w http.ResponseWriter, r *http.Request) {
+	// Extract the customer ID from the request URI
+	exploded := strings.Split(r.RequestURI, "/")
+	if len(exploded) < 3 {
+		// Handle the case where there are not enough segments in the URI.
+		http.Error(w, "Invalid request URI", http.StatusBadRequest)
+		fmt.Println("Invalid request URI")
+		return
+	}
+
+	id, err := strconv.Atoi(exploded[3])
+	if err != nil {
+		helpers.ServerError(w, err)
+		fmt.Println("Error converting ID:", err)
+		return
+	}
+	fmt.Println("PostRepresentative", id)
+
+	// Parse the form to handle form fields and file uploads
+	err = r.ParseMultipartForm(10 << 20) // 10MB maximum file size
+	if err != nil {
+		helpers.ServerError(w, err)
+		fmt.Println("Error parsing form:", err)
+		return
+	}
+
+	// Retrieve the uploaded files
+	idfiles := r.MultipartForm.File["repIDFilepath"]
+	passfiles := r.MultipartForm.File["repPassFilepath"]
+
+	var idfilePath string
+	var passfilePath string
+	var customerCode string
+	// Parse date fields
+	parseDate := func(fieldName string) (time.Time, error) {
+		dateStr := r.Form.Get(fieldName)
+		if dateStr == "" {
+			return time.Time{}, nil
+		}
+		return time.Parse("2006-01-02", dateStr)
+	}
+
+	idExpireDate, _ := parseDate("repEmIDExp")
+	passExpireDate, _ := parseDate("repPassportExp")
+
+	// Function to handle file uploads
+	handleFileUpload := func(files []*multipart.FileHeader, filePath *string) {
+		if len(files) == 1 {
+			customerCode, err = m.DB.GetCustomerCodeByID(id)
+			if err != nil {
+				helpers.ServerError(w, err)
+				fmt.Println("Error getting customer code:", err)
+				return
+			}
+
+			partnerDir := "memorandum"
+			//customerDir := fmt.Sprintf("E:\\GO\\FF\\%s\\%s", customerCode, partnerDir)
+			customerDir := fmt.Sprintf("%s%s\\%s", config.FileUploadPath, customerCode, partnerDir)
+			if _, err := os.Stat(customerDir); os.IsNotExist(err) {
+				if err := os.MkdirAll(customerDir, os.ModePerm); err != nil {
+					helpers.ServerError(w, err)
+					fmt.Println("Error creating customer directory:", err)
+					return
+				}
+			}
+
+			file := files[0] // Assuming the file slice contains only one file
+
+			// Use the original filename as it is
+			*filePath = filepath.Join(customerDir, file.Filename)
+			destinationFile, err := os.Create(*filePath)
+			if err != nil {
+				helpers.ServerError(w, err)
+				fmt.Println("Error creating destination file:", err)
+				return
+			}
+			defer destinationFile.Close()
+
+			sourceFile, err := file.Open()
+			if err != nil {
+				helpers.ServerError(w, err)
+				fmt.Println("Error opening source file:", err)
+				return
+			}
+			defer sourceFile.Close()
+
+			_, err = io.Copy(destinationFile, sourceFile)
+			if err != nil {
+				helpers.ServerError(w, err)
+				fmt.Println("Error copying files:", err)
+				return
+			}
+
+			fmt.Printf("Added file: %s\n", file.Filename)
+		}
+	}
+
+	// Handle file uploads for ID and Passport
+	handleFileUpload(idfiles, &idfilePath)
+	handleFileUpload(passfiles, &passfilePath)
+
+	// Create a reservation object with form data
+	partner := models.Memorandum{
+		CustomerId:         id,
+		CustomerCode:       customerCode,
+		RepresentativeName: r.Form.Get("representativeName"),
+		RepNoOfShares:      r.Form.Get("repNoOfShares"),
+		RepEmID:            r.Form.Get("repEmID"),
+		RepEmIDExp:         idExpireDate,
+		RepIDFilepath:      idfilePath,
+		RepPassport:        r.Form.Get("repPassport"),
+		RepPassportExp:     passExpireDate,
+		RepPassFilepath:    passfilePath,
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
+	}
+	fmt.Println("Rep emi File:", idfilePath)
+	fmt.Println("Rep pass file:", passfilePath)
+
+	// Create a form object for validation
+	form := forms.New(r.PostForm)
+
+	// Check required fields and add validation errors
+	form.Required("representativeName", "repNoOfShares")
+
+	// If the form is not valid, render the reservation page with validation errors
+	if !form.Valid() {
+		data := make(map[string]interface{})
+		data["memorandum"] = partner
+
+		render.Templates(w, r, "customer-add-memorandum.page.tmpl", &models.TemplateData{
+			Form: form,
+			Data: data,
+		})
+		return
+	}
+
+	// Insert the reservation into the database
+	newCustomerID, err := m.DB.InsertMemorandum(partner)
+	if err != nil {
+		helpers.ServerError(w, err)
+		fmt.Println("Error inserting partner:", err)
+		return
+	}
+	url := fmt.Sprintf("/customer/memorandum/%d", id)
+	m.App.Session.Put(r.Context(), "flash", "New Representative Added Successfully..! ID :"+strconv.Itoa(newCustomerID))
+
+	// Store the reservation in the session and redirect to the reservation summary page
+	m.App.Session.Put(r.Context(), "memorandum", partner)
+	http.Redirect(w, r, url, http.StatusSeeOther)
 }

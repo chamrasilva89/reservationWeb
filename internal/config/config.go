@@ -7,6 +7,8 @@ import (
 	"github.com/alexedwards/scs/v2"
 )
 
+const FileUploadPath = "E:\\GO\\FF\\"
+
 // Appconfig hold the app config
 type AppConfig struct {
 	UseCache      bool

@@ -1,102 +1,156 @@
 {{template "base" .}}
 
 {{define "content"}}
-    <div class="container mt-5">
-        <h1 class="mb-4">Trade License Details</h1>
-        {{$res := index .Data "tradelicense"}}
-        <form method="post" action="/customer-trade-license/{{$res.CustomerId}}" enctype="multipart/form-data" class="" novalidate>
-            <!-- Form inputs with Bootstrap classes -->
-            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="CustomerId" class="form-label">Customer ID</label>
-                        <input type="text" value="{{$res.CustomerId}}" name='customerId' class="form-control" id="CustomerId" required readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label for="emirates" class="form-label">Emirate</label>
-                        <select class="form-control" name='emirate' id="emirate" name="emirate">
-                            <option value="ABU" {{if eq $res.Emirate "ABU"}}selected{{end}}>Abu Dhabi</option>
-                            <option value="AJM" {{if eq $res.Emirate "AJM"}}selected{{end}}>Ajman</option>
-                            <option value="DUB" {{if eq $res.Emirate "DUB"}}selected{{end}}>Dubai</option>
-                            <option value="FUJ" {{if eq $res.Emirate "FUJ"}}selected{{end}}>Fujairah</option>
-                            <option value="RAS" {{if eq $res.Emirate "RAS"}}selected{{end}}>Ras al-Khaimah</option>
-                            <option value="SHA" {{if eq $res.Emirate "SHA"}}selected{{end}}>Sharjah</option>
-                            <option value="UMM" {{if eq $res.Emirate "UMM"}}selected{{end}}>Umm al-Quwain</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="tradeLicenseNo" class="form-label">Trade License No</label>
-                        <input type="text" name='tradelicenseid' value="{{$res.TradeLicenseNo}}" class="form-control" id="tradeLicenseNo">
-                    </div>
-                    <div class="mb-3">
-                        <label for="mohreNo" class="form-label">MOHRE No</label>
-                        <input type="text" name='mohreno' value="{{$res.MohreNo}}" class="form-control" id="mohreNo">
-                    </div>
+<div class="container mt-5">
+    <h1 class="mb-4">Trade License Details</h1>
+    {{$res := index .Data "tradelicense"}}
+    <form method="post" action="/customer/trade-license/{{$res.CustomerId}}" enctype="multipart/form-data" class="" novalidate>
+        <!-- Form inputs with Bootstrap classes -->
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="CustomerId" class="form-label">Customer ID</label>
+                    <input type="text" value="{{$res.CustomerId}}" name='customerId' class="form-control" id="CustomerId" required readonly>
                 </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="establishmentDate" class="form-label">Establishment Date</label>
-                        <input type="date" name="establishmentDate" value="{{$res.EstablishDate.Format "2006-01-02"}}" class="form-control" id="establishmentDate">
-                    </div>
-                    <div class="mb-3">
-                        <label for="registrationDate" class="form-label">Registration Date</label>
-                        <input type="date" name="registrationDate" value="{{$res.RegistrationDate.Format "2006-01-02"}}" class="form-control" id="registrationDate">
-                    </div>
-                    <div class="mb-3">
-                        <label for="licenseExpiryDate" class="form-label">License Expiry Date</label>
-                        <input type="date" name="licenseExpiryDate" value="{{$res.LicenseExpiry.Format "2006-01-02"}}" class="form-control" id="licenseExpiryDate">
-                    </div>
-                    <div class="mb-3">
-                        <label for="tradeName" class="form-label">Trade Name</label>
-                        <input type="text" name='tradeName' value="{{$res.TradeName}}" class="form-control" id="tradeName">
-                    </div>
-                    <div class="mb-3">
-                        <label for="legalState" class="form-label">Legal State</label>
-                        <input type="text" name='legalState' value="{{$res.LegalStatus}}" class="form-control" id="legalState">
-                    </div>
-                    <!-- New input field for attaching trade license -->
-                    <div class="mb-3">
-                        <label for="tradeLicenseAttachment" class="form-label">Attach Trade License</label>
-                          <div id="drop-zone" class="form-control custom-file">
-                            <p class="text-center">Drag and drop files here, or click to select files.</p>
-                            <input type="file" name="photos" multiple class="custom-file-input" id="photos" onchange="displaySelectedFiles(this)">
-                            <label class="custom-file-label" for="photos">Choose file(s)</label>
-                        </div>
+                <div class="mb-3">
+                    <label for="emirates" class="form-label">Emirate</label>
+                    <select class="form-control" name='emirate' id="emirate">
+                        <option value="ABU" {{if eq $res.Emirate "ABU"}}selected{{end}}>Abu Dhabi</option>
+                        <option value="AJM" {{if eq $res.Emirate "AJM"}}selected{{end}}>Ajman</option>
+                        <option value="DUB" {{if eq $res.Emirate "DUB"}}selected{{end}}>Dubai</option>
+                        <option value="FUJ" {{if eq $res.Emirate "FUJ"}}selected{{end}}>Fujairah</option>
+                        <option value="RAS" {{if eq $res.Emirate "RAS"}}selected{{end}}>Ras al-Khaimah</option>
+                        <option value="SHA" {{if eq $res.Emirate "SHA"}}selected{{end}}>Sharjah</option>
+                        <option value="UMM" {{if eq $res.Emirate "UMM"}}selected{{end}}>Umm al-Quwain</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="tradeLicenseNo" class="form-label">Trade License No</label>
+                    <input type="text" name='tradelicenseid' value="{{$res.TradeLicenseNo}}" class="form-control" id="tradeLicenseNo">
+                </div>
+                <div class="mb-3">
+                    <label for="mohreNo" class="form-label">MOHRE No</label>
+                    <input type="text" name='mohreno' value="{{$res.MohreNo}}" class="form-control" id="mohreNo">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="establishmentDate" class="form-label">Establishment Date</label>
+                    <input type="date" name="establishmentDate" value="{{$res.EstablishDate.Format "2006-01-02"}}" class="form-control" id="establishmentDate" required>
+                </div>
+                <div class="mb-3">
+                    <label for="registrationDate" class="form-label">Registration Date</label>
+                    <input type="date" name="registrationDate" value="{{$res.RegistrationDate.Format "2006-01-02"}}" class="form-control" id="registrationDate" required>
+                </div>
+                <div class="mb-3">
+                    <label for="licenseExpiryDate" class="form-label">License Expiry Date</label>
+                    <input type="date" name="licenseExpiryDate" value="{{$res.LicenseExpiry.Format "2006-01-02"}}" class="form-control" id="licenseExpiryDate" required>
+                </div>
+                <div class="mb-3">
+                    <label for="tradeName" class="form-label">Trade Name</label>
+                    <input type="text" name='tradeName' value="{{$res.TradeName}}" class="form-control" id="tradeName">
+                </div>
+                <div class="mb-3">
+                    <label for="legalState" class="form-label">Legal State</label>
+                    <select class="form-control" name="legalState" id="legalState">
+                        <option value="Proprietorship" {{if eq $res.LegalStatus "Proprietorship"}}selected{{end}}>Proprietorship</option>
+                        <option value="Partnership" {{if eq $res.LegalStatus "Partnership"}}selected{{end}}>Partnership</option>
+                        <option value="Limited Liability Company" {{if eq $res.LegalStatus "Limited Liability Company"}}selected{{end}}>Limited Liability Company</option>
+                    </select>
+                </div>
+                <!-- New input field for attaching trade license -->
+                <div class="mb-3">
+                    <label for="tradeLicenseAttachment" class="form-label">Attach Trade License</label>
+                    <div id="drop-zone" class="form-control custom-file">
+                        <p class="text-center">Drag and drop files here, or click to select files.</p>
+                        <input type="file" name="photos" multiple class="custom-file-input" id="photos" onchange="displaySelectedFiles(this)">
+                        <label class="custom-file-label" for="photos">Choose file(s)</label>
                     </div>
                 </div>
             </div>
-            <br/>
-            <!-- Display attachments -->
-            {{ if .Data.tradeattachments }}
-                <p>Number of attachments: {{ len .Data.tradeattachments }}</p>
-                <ul>
-                    {{ range $attachment := .Data.tradeattachments }}
-                        <li><a href="{{ $attachment }}" target="_blank">{{ $attachment }}</a></li>
-                    {{ end }}
-                </ul>
-            {{ else }}
-                <p>No attachments available.</p>
+        </div>
+        <br/>
+        <!-- Display attachments -->
+        {{ if .Data.tradeattachments }}
+        <p>Number of attachments: {{ len .Data.tradeattachments }}</p>
+        <ul>
+            {{ range $attachment := .Data.tradeattachments }}
+            <li><a href="{{ $attachment }}" target="_blank">{{ $attachment }}</a></li>
             {{ end }}
-            <br/>
-            <!-- Buttons with Bootstrap classes -->
-            <div class="mb-3">
-                <button type="submit" class="btn btn-primary">Save</button>
-                <button type="button" id="cancel" class="btn btn-secondary">Cancel</button>
-            </div>
-        </form>
-            <script>
+        </ul>
+        {{ else }}
+        <p>No attachments available.</p>
+        {{ end }}
+        <br/>
+        <!-- Buttons with Bootstrap classes -->
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" id="cancel" class="btn btn-secondary">Cancel</button>
+        </div>
+    </form>
+    <script>
         function displaySelectedFiles(input) {
             var label = input.nextElementSibling;
             var fileNames = Array.from(input.files).map(file => file.name);
             label.innerHTML = fileNames.join(', ');
         }
-            document.addEventListener("DOMContentLoaded", function () {
-        // Your JavaScript code here, including the "Cancel" button event listener.
-        document.getElementById("cancel").addEventListener("click", function () {
-            window.history.back();
+        //
+        document.addEventListener("DOMContentLoaded", function () {
+            var establishmentDateInput = document.getElementById('establishmentDate');
+
+            establishmentDateInput.addEventListener('blur', function () {
+                var currentDate = new Date();
+                var selectedDate = new Date(establishmentDateInput.value);
+
+                if (selectedDate > currentDate) {
+                    alert("Establishment Date cannot be a future date.");
+                    establishmentDateInput.value = ''; // Clear the input
+                }
+            });
+            //
+            var registrationDateInput = document.getElementById('registrationDate');
+            registrationDateInput.addEventListener('blur', function () {
+                var currentDate = new Date();
+                var selectedDate = new Date(registrationDateInput.value);
+
+                if (selectedDate > currentDate) {
+                    alert("Registration Date cannot be a future date.");
+                    registrationDateInput.value = ''; // Clear the input
+                }
+            });
+            //
+            var licenseExpiryDateInput = document.getElementById('licenseExpiryDate');
+            licenseExpiryDateInput.addEventListener('blur', function () {
+                var currentDate = new Date();
+                var selectedDate = new Date(licenseExpiryDateInput.value);
+
+                if (selectedDate < currentDate) {
+                    alert("License Expiry Date cannot be a past date.");
+                    licenseExpiryDateInput.value = ''; // Clear the input
+                }
+            });
+            //
+            var photosInput = document.getElementById('photos');
+            var form = document.querySelector('form'); // Assuming this is your form element
+
+            photosInput.addEventListener('change', function () {
+                if (photosInput.files.length === 0) {
+                    alert("Please select at least one attachment for Trade License.");
+                    return false; // Prevent form submission
+                }
+            });
+
+            form.addEventListener('submit', function (event) {
+                if (photosInput.files.length === 0) {
+                    alert("Please select at least one attachment for Trade License.");
+                    event.preventDefault(); // Prevent form submission if there are no attachments
+                }
+            });
+             document.getElementById("cancel").addEventListener("click", function () {
+                        window.history.back();
+                    });
         });
-    });
     </script>
-    </div>
+</div>
 {{end}}

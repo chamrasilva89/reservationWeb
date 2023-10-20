@@ -4,7 +4,9 @@
     <!-- Content -->
     <div class="container mt-5">
         <h1 class="mb-4">Representative Details</h1>
-        <a href="/customer-add-memorandum/{{.CustomerID}}" class="btn btn-primary mb-4">Add New</a>
+         <div class="mb-4"> <!-- Add a div wrapper -->
+            <a href="/customer/add-memorandum/{{.CustomerID}}" class="btn btn-primary mb-4">Add New</a>
+        </div>
         {{with index .Data "memorandum"}}
             <form method="" action="" enctype="multipart/form-data">
                 <table class="table table-bordered">

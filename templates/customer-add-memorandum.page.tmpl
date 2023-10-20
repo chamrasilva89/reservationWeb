@@ -2,9 +2,9 @@
 
 {{define "content"}}
     <div class="container mt-5">
-        <h1 class="mb-4">Add New Partner</h1>
+        <h1 class="mb-4">Add New Representative</h1>
     </div>
-    {{$res := index .Data "partners"}}
+    {{$res := index .Data "memorandum"}}
     <form method="post" action="" enctype="multipart/form-data" class="" novalidate>
         <input type='hidden' name='csrf_token' value="{{.CSRFToken}}">
         <input type='hidden' name='status' value="Entered">
@@ -12,77 +12,45 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label for="ShareHolderName">Shareholder Name</label>
-                        <input type="text" name='ShareHolderName' class="form-control" id="ShareHolderName" required>
+                        <label for="CustomerId">Customer ID</label>
+                        <input type="number" value={{.CustomerID}} name='CustomerId' class="form-control" id="CustomerId" readonly>
                     </div>
-                    <div class="form-group">
-                        <label for="ShEmirateID">Emirate ID</label>
-                        <input type="text" name='ShEmirateID' class="form-control" id="ShEmirateID" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="ShEmIDExp">Emirate ID Expiry Date</label>
-                        <input type="date" name='ShEmIDExp' class="form-control" id="ShEmIDExp">
-                    </div>
-                    <div class="form-group">
-                        <label for="ShIDFilepath">Upload Emirate ID</label>
-                        <input type="file" name='ShIDFilepath' class="custom-file-input" id="ShIDFilepath">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="ShPassport">Passport</label>
-                        <input type="text" name='ShPassport' class "form-control" id="ShPassport">
-                    </div>
-                    <div class="form-group">
-                        <label for="ShPassportExp">Passport Expiry Date</label>
-                        <input type="date" name='ShPassportExp' class="form-control" id="ShPassportExp">
-                    </div>
-                    <div class="form-group">
-                        <label for="ShPassFilepath">Upload Passport</label>
-                        <input type="file" name='ShPassFilepath' class="custom-file-input" id="ShPassFilepath">
-                    </div>
-                </div>
-            </div>
-            <!-- New Fields -->
-            <div class="row">
-                <div class="col-md-6">
                     <div class="form-group">
                         <label for="RepresentativeName">Representative Name</label>
-                        <input type="text" name='RepresentativeName' class="form-control" id="RepresentativeName" required>
+                        <input type="text" name='representativeName' class="form-control" id="RepresentativeName" required>
                     </div>
                     <div class="form-group">
                         <label for="RepNoOfShares">Number of Shares</label>
-                        <input type="number" name='RepNoOfShares' class="form-control" id="RepNoOfShares" required>
+                        <input type="text" name='repNoOfShares' class="form-control" id="RepNoOfShares" required>
                     </div>
                     <div class="form-group">
                         <label for="RepEmID">Representative Emirate ID</label>
-                        <input type="text" name='RepEmID' class="form-control" id="RepEmID" required>
+                        <input type="text" name='repEmID' class="form-control" id="RepEmID" required>
                     </div>
                     <div class="form-group">
                         <label for="RepEmIDExp">Representative Emirate ID Expiry Date</label>
-                        <input type="date" name='RepEmIDExp' class="form-control" id="RepEmIDExp">
+                        <input type="date" name="repEmIDExp" class="form-control" id="RepEmIDExp">
                     </div>
                     <div class="form-group">
                         <label for="RepIDFilepath">Upload Representative Emirate ID</label>
-                        <input type="file" name='RepIDFilepath' class="custom-file-input" id="RepIDFilepath">
+                        <input type="file" name='repIDFilepath' class="custom-file-input" id="RepIDFilepath">
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
                         <label for="RepPassport">Representative Passport</label>
-                        <input type="text" name='RepPassport' class="form-control" id="RepPassport">
+                        <input type="text" name='repPassport' class="form-control" id="RepPassport">
                     </div>
                     <div class="form-group">
                         <label for="RepPassportExp">Representative Passport Expiry Date</label>
-                        <input type="date" name='RepPassportExp' class="form-control" id="RepPassportExp">
+                        <input type="date" name="repPassportExp" class="form-control" id="RepPassportExp">
                     </div>
                     <div class="form-group">
                         <label for="RepPassFilepath">Upload Representative Passport</label>
-                        <input type="file" name='RepPassFilepath' class="custom-file-input" id="RepPassFilepath">
+                        <input type="file" name='repPassFilepath' class="custom-file-input" id="RepPassFilepath">
                     </div>
                 </div>
             </div>
-            <!-- End of New Fields -->
             <br/>
             <div class="form-group">
                 <button type="submit" class="btn btn-primary">Save</button>
@@ -96,5 +64,33 @@
             var fileNames = Array.from(input.files).map(file => file.name);
             label.innerHTML = fileNames.join(', ');
         }
+        document.addEventListener("DOMContentLoaded", function () {
+            // Your JavaScript code here, including the "Cancel" button event listener.
+            document.getElementById("cancel").addEventListener("click", function () {
+                window.history.back();
+            });
+            //
+            var repEmIDExpInput = document.getElementById('RepEmIDExp');
+            repEmIDExpInput.addEventListener('blur', function () {
+                var currentDate = new Date();
+                var selectedDate = new Date(repEmIDExpInput.value);
+
+                if (selectedDate < currentDate) {
+                    alert("Representative Emirate ID Expiry Date cannot be a past date.");
+                    repEmIDExpInput.value = ''; // Clear the input
+                }
+            });
+            //
+            var repPassportExpInput = document.getElementById('RepPassportExp');
+            repPassportExpInput.addEventListener('blur', function () {
+                var currentDate = new Date();
+                var selectedDate = new Date(repPassportExpInput.value);
+
+                if (selectedDate < currentDate) {
+                    alert("Representative Passport Expiry Date cannot be a past date.");
+                    repPassportExpInput.value = ''; // Clear the input
+                }
+            });
+        });
     </script>
 {{end}}

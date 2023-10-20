@@ -42,34 +42,41 @@ func routes(app *config.AppConfig) http.Handler {
 	mux.Post("/user/login", handler.Repo.PostShowLogin)
 	mux.Get("/user/logout", handler.Repo.Logout)
 
-	mux.Get("/add-customer", handler.Repo.AddCustomer)
-	mux.Post("/add-customer", handler.Repo.PostCustomer)
-	mux.Get("/customer-all", handler.Repo.AllCustomers)
-	mux.Get("/customer-details/{id}", handler.Repo.ShowCustomerDetails)
-	mux.Get("/customer-trade-license/{id}", handler.Repo.ShowCustomerTradeLicense)
-	mux.Post("/customer-trade-license/{id}", handler.Repo.PostTradeLicense)
-	mux.Get("/customer-partners/{id}", handler.Repo.ShowCustomerPartners)
-	mux.Get("/customer-memorandum/{id}", handler.Repo.ShowCustomerMemorandum)
-	mux.Get("/customer-add-partner/{id}", handler.Repo.AddPartner)
-	mux.Get("/customer-add-memorandum/{id}", handler.Repo.AddPartner)
-	mux.Post("/add-partner", handler.Repo.PostPartner)
+	// Create a route group for routes starting with "/customer"
+	mux.Route("/customer", func(customerMux chi.Router) {
+		// Apply the Auth middleware to all routes in this group
+		customerMux.Use(Auth)
+
+		customerMux.Get("/add", handler.Repo.AddCustomer)
+		customerMux.Post("/add", handler.Repo.PostCustomer)
+		customerMux.Get("/all", handler.Repo.AllCustomers)
+		customerMux.Get("/details/{id}", handler.Repo.ShowCustomerDetails)
+		customerMux.Get("/trade-license/{id}", handler.Repo.ShowCustomerTradeLicense)
+		customerMux.Post("/trade-license/{id}", handler.Repo.PostTradeLicense)
+		customerMux.Get("/partners/{id}", handler.Repo.ShowCustomerPartners)
+		customerMux.Get("/memorandum/{id}", handler.Repo.ShowCustomerMemorandum)
+		customerMux.Get("/add-partner/{id}", handler.Repo.AddPartner)
+		customerMux.Post("/add-partner/{id}", handler.Repo.PostPartner)
+		customerMux.Get("/add-memorandum/{id}", handler.Repo.AddMemorandum)
+		customerMux.Post("/add-memorandum/{id}", handler.Repo.PostRepresentative)
+	})
+
 	// Serve static files from the "static" directory
 	fileServer := http.FileServer(http.Dir("./static"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
-	mux.Route("/admin", func(mux chi.Router) {
-		mux.Use(Auth)
-		mux.Get("/dashboard", handler.Repo.AdminDashboard)
+	mux.Route("/admin", func(adminMux chi.Router) {
+		adminMux.Use(Auth)
+		adminMux.Get("/dashboard", handler.Repo.AdminDashboard)
 
-		mux.Get("/reservations-new", handler.Repo.AdminNewReservations)
-		mux.Get("/reservations-all", handler.Repo.AdminAllReservations)
-		/*mux.Get("/reservations-calendar", handler.Repo.AdminReservationsCalendar)
-		mux.Post("/reservations-calendar", handler.Repo.AdminPostReservationsCalendar)
-		mux.Get("/process-reservation/{src}/{id}/do", handlers.Repo.AdminProcessReservation)
-		mux.Get("/delete-reservation/{src}/{id}/do", handlers.Repo.AdminDeleteReservation)*/
-		mux.Get("/process-reservation/{src}/{id}/do", handler.Repo.AdminProcessReservation)
-		mux.Get("/reservations/{src}/{id}/show", handler.Repo.AdminShowReservation)
-		mux.Post("/reservations/{src}/{id}", handler.Repo.AdminPostShowReservation)
+		adminMux.Get("/reservations-new", handler.Repo.AdminNewReservations)
+		adminMux.Get("/reservations-all", handler.Repo.AdminAllReservations)
+		// Add more admin routes here
+
+		// Example:
+		// adminMux.Get("/process-reservation/{src}/{id}/do", handler.Repo.AdminProcessReservation)
+		// adminMux.Get("/reservations/{src}/{id}/show", handler.Repo.AdminShowReservation)
+		// adminMux.Post("/reservations/{src}/{id}", handler.Repo.AdminPostShowReservation)
 	})
 
 	return mux

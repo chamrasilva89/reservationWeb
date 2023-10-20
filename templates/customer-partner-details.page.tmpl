@@ -4,13 +4,17 @@
     <!-- Content -->
     <div class="container mt-5">
         <h1 class="mb-4">Partner Details</h1>
-         <a href="/customer-add-partner/{{.CustomerID}}" class="btn btn-primary mb-4">Add New</a>
+        <div class="mb-4"> <!-- Add a div wrapper -->
+            <a href="/customer/add-partner/{{.CustomerID}}" class="btn btn-primary">Add New</a>
+        </div>
         {{with index .Data "partners"}}
             <form method="" action="" enctype="multipart/form-data">
 
                 <table class="table table-bordered">
                     <thead>
                         <tr>
+                            <th>Shareholder Role</th>
+                            <th>Shareholder Nationality</th>
                             <th>Name of the Owner/Partners/Shareholders</th>
                             <th>EID No</th>
                             <th>EID Expiry Date</th>
@@ -23,6 +27,8 @@
                         <!-- Loop through partner records and generate rows -->
                         {{range .}}
                             <tr>
+                                <td>{{.ShareHolderRole}}</td>
+                                <td>{{.ShNationality}}</td>
                                 <td>{{.ShareHolderName}}</td>
                                 <td>{{.ShEmirateID}}</td>
                                 <td>{{.ShEmIDExp}}</td>
@@ -44,14 +50,14 @@
                 <button type="submit" class="btn btn-primary">Save</button>
                 <button type="button" id="cancel" class="btn btn-secondary">Cancel</button>
             </form>
-                <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        // Your JavaScript code here, including the "Cancel" button event listener.
-        document.getElementById("cancel").addEventListener("click", function () {
-            window.history.back();
-        });
-    });
-    </script>
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    // Your JavaScript code here, including the "Cancel" button event listener.
+                    document.getElementById("cancel").addEventListener("click", function () {
+                        window.history.back();
+                    });
+                });
+            </script>
         {{end}}
     </div>
 {{end}}

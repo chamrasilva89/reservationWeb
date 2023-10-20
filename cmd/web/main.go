@@ -54,6 +54,9 @@ func run() (*driver.DB, error) {
 	gob.Register(models.Customer{})
 	gob.Register(models.CustomerImages{})
 	gob.Register(models.Attachment{})
+	gob.Register(models.TradeLicenseHolder{})
+	gob.Register(models.TradeLicense{})
+	gob.Register(models.Memorandum{})
 	app.InProduction = false
 
 	// Initialize loggers for information and error logs

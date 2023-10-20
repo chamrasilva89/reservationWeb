@@ -1,0 +1,2 @@
+drop_column("customers", "business_nature")
+drop_column("customers", "location_cordinates")

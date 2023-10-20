@@ -400,7 +400,7 @@ func (m *postgresDBRepo) InsertCustomer(res models.Customer) (int, error) {
 	//
 	var newID int
 	stmt := `insert into customers (customer_code,customer_name,contact_person,contact_tel,contact_mobile,
-		contact_email,customer_business,customer_location,customer_status,marketer_name,marketer_code,marketer_email) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning customer_id`
+		contact_email,customer_business,customer_location,customer_status,marketer_name,marketer_code,marketer_email,business_nature) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) returning customer_id`
 
 	err := m.DB.QueryRowContext(ctx, stmt,
 		res.CustomerCode,
@@ -415,6 +415,7 @@ func (m *postgresDBRepo) InsertCustomer(res models.Customer) (int, error) {
 		res.MarketerName,
 		res.MarketedBy,
 		res.MarketerEmail,
+		res.NatureOfBusiness,
 	).Scan(&newID)
 
 	if err != nil {
@@ -433,7 +434,7 @@ func (m *postgresDBRepo) AllCustomers() ([]models.Customer, error) {
 
 	query := `SELECT customer_id, customer_code, customer_name, contact_person, 
 	contact_tel, contact_mobile, contact_email, customer_business, customer_location, 
-	customer_status, marketer_name, marketer_code, marketer_email
+	customer_status, marketer_name, marketer_code, marketer_email,business_nature
 	FROM customers
 `
 
@@ -459,6 +460,7 @@ func (m *postgresDBRepo) AllCustomers() ([]models.Customer, error) {
 			&i.MarketerName,
 			&i.MarketedBy,
 			&i.MarketerEmail,
+			&i.NatureOfBusiness,
 		)
 
 		if err != nil {
@@ -499,7 +501,7 @@ func (m *postgresDBRepo) GetCustomerByID(id int) (models.Customer, error) {
 
 	query := `SELECT customer_id, customer_code, customer_name, contact_person, 
 	contact_tel, contact_mobile, contact_email, customer_business, customer_location, 
-	customer_status, marketer_name, marketer_code, marketer_email
+	customer_status, marketer_name, marketer_code, marketer_email,business_nature,location_cordinates
 	FROM customers where customer_id = $1`
 	row := m.DB.QueryRowContext(ctx, query, id)
 	err := row.Scan(
@@ -516,6 +518,8 @@ func (m *postgresDBRepo) GetCustomerByID(id int) (models.Customer, error) {
 		&res.MarketerName,
 		&res.MarketedBy,
 		&res.MarketerEmail,
+		&res.NatureOfBusiness,
+		&res.LocationCoordinates,
 	)
 
 	if err != nil {
@@ -749,14 +753,15 @@ func (m *postgresDBRepo) GetMemorandumInforByID(id int) ([]models.Memorandum, er
 func (m *postgresDBRepo) InsertPartner(res models.TradeLicenseHolder) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	//
+
 	var newID int
-	stmt := `insert into customers (trade_license_id, customer_id,  customer_code,
-		 shareholder_name, shareholder_role, 
-		 shareholder_nationality, shareholder_no_of_shares, 
-		 "shareholder_emirateID", emirateid_expire_date, 
-		 shareholder_passport, passport_expire_date, 
-		 id_file_path, passport_file_path) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning shareholder_id`
+	stmt := `insert into trade_license_shareholders (trade_license_id, customer_id, 
+		customer_code,
+			shareholder_name, shareholder_role, 
+			shareholder_nationality, shareholder_no_of_shares, 
+			"shareholder_emirateID", emirateid_expire_date, 
+			shareholder_passport, passport_expire_date, 
+			id_file_path, passport_file_path,created_at,updated_at) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) returning shareholder_id`
 
 	err := m.DB.QueryRowContext(ctx, stmt,
 		res.TradeLicenseID,
@@ -772,11 +777,68 @@ func (m *postgresDBRepo) InsertPartner(res models.TradeLicenseHolder) (int, erro
 		res.ShPassportExp,
 		res.ShIDFilepath,
 		res.ShPassFilepath,
+		res.CreatedAt,
+		res.UpdatedAt,
 	).Scan(&newID)
 
 	if err != nil {
+		fmt.Println("Error inserting partner:", err)
 		return 0, err
 	}
 
+	fmt.Println("Inserted new partner with ID:", newID)
+	return newID, nil
+}
+
+func (m *postgresDBRepo) GetCustomerCodeByID(id int) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	query := `SELECT customer_code FROM customers WHERE customer_id = $1`
+
+	var customerCode string
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(&customerCode)
+	if err != nil {
+		return "", err
+	}
+
+	return customerCode, err
+}
+
+func (m *postgresDBRepo) InsertMemorandum(res models.Memorandum) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var newID int
+	stmt := `insert into memorandums 
+	(trade_license_id, customer_id, 
+		customer_code, representative_name, representative_no_of_shares, 
+		"representative_emirateID", emirateid_expire_date, 
+		representative_passport, passport_expire_date, id_file_path,
+		passport_file_path, created_at, updated_at) 
+		values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) returning memorandum_id`
+
+	err := m.DB.QueryRowContext(ctx, stmt,
+		res.TradeLicenseID,
+		res.CustomerId,
+		res.CustomerCode,
+		res.RepresentativeName,
+		res.RepNoOfShares,
+		res.RepEmID,
+		res.RepEmIDExp,
+		res.RepPassport,
+		res.RepPassportExp,
+		res.RepIDFilepath,
+		res.RepPassFilepath,
+		res.CreatedAt,
+		res.UpdatedAt,
+	).Scan(&newID)
+
+	if err != nil {
+		fmt.Println("Error inserting partner:", err)
+		return 0, err
+	}
+
+	fmt.Println("Inserted new partner with ID:", newID)
 	return newID, nil
 }

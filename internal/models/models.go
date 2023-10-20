@@ -57,23 +57,24 @@ type RoomRestriction struct {
 }
 
 type Customer struct {
-	CustomerId       int
-	CustomerCode     string
-	CustomerName     string
-	ContactNo        string
-	ContactPerson    string
-	Email            string
-	MobileNo         string
-	BusinessName     string
-	Status           string
-	LocationDetails  string
-	NatureOfBusiness string
-	MarketedBy       string
-	MarketerName     string
-	MarketerEmail    string
-	Photos           []string // You can use a slice of strings to store photo filenames
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	CustomerId          int
+	CustomerCode        string
+	CustomerName        string
+	ContactNo           string
+	ContactPerson       string
+	Email               string
+	MobileNo            string
+	BusinessName        string
+	Status              string
+	LocationDetails     string
+	NatureOfBusiness    string
+	MarketedBy          string
+	MarketerName        string
+	MarketerEmail       string
+	Photos              []string // You can use a slice of strings to store photo filenames
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	LocationCoordinates string
 }
 
 type CustomerImages struct {

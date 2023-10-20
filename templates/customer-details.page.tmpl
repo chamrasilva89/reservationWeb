@@ -1,123 +1,128 @@
 {{template "base" .}}
 
 {{define "content"}}
-    <div class="container mt-5">
-        <h1 class="mb-4">Add New Customer</h1>
-    </div>
-     {{$res := index .Data "customer"}}
-    <form  method="post" action="/customer-details/{{$res.CustomerId}}" enctype="multipart/form-data" class="" novalidate>
-     <input type='hidden' name='csrf_token' value="{{.CSRFToken}}">
-     <input type='hidden' name='status' value="Entered">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="customerCode">Customer Code</label>
-                        {{with .Form.Errors.Get "customerCode"}}
-                        <label class="text-danger">{{.}}</label>
-                        {{end}}
-                        <input type="text" value="{{$res.CustomerCode}}" name='customerCode' class="form-control {{with .Form.Errors.Get "customerCode"}} is-invalid {{end}}" id="customerCode" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="customerName">Name of the Customer</label>
-                        {{with .Form.Errors.Get "customerName"}}
-                        <label class="text-danger">{{.}}</label>
-                        {{end}}
-                        <input type="text" value="{{$res.CustomerName}}" name='customerName' class="form-control {{with .Form.Errors.Get "customerName"}} is-invalid {{end}}" id="customerName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="contactNo">Contact No</label>
-                        {{with .Form.Errors.Get "contactNo"}}
-                        <label class="text-danger">{{.}}</label>
-                        {{end}}
-                        <input type="tel" name='contactNo' value="{{$res.ContactNo}}" class="form-control {{with .Form.Errors.Get "contactNo"}} is-invalid {{end}}" id="contactNo">
-                    </div>
-                    <div class="form-group">
-                        <label for="contactPerson">Contact Person</label>
-                         {{with .Form.Errors.Get "contactPerson"}}
-                         <label class="text-danger">{{.}}</label>
-                        {{end}}
-                        <input type="text"  value="{{$res.ContactPerson}}" name='contactPerson' class="form-control {{with .Form.Errors.Get "contactPerson"}} is-invalid {{end}}" id="contactPerson">
-                    </div>
-                    <div class="form-group">
-                        <label for="mobileNo">Mobile No</label>
-                          {{with .Form.Errors.Get "mobileNo"}}
-                          <label class="text-danger">{{.}}</label>
-                          {{end}}
-                        <input type="tel" value="{{$res.MobileNo}}" name='mobileNo' class="form-control {{with .Form.Errors.Get "mobileNo"}} is-invalid {{end}}" id="mobileNo">
-                    </div>
+<style>
+    .custom-form-group {
+        margin-bottom: 10px; /* Adjust the margin to your preference */
+    }
+</style>
+<div class="container mt-5">
+    <h1 class="mb-4">Customer Details</h1>
+</div>
+{{$res := index .Data "customer"}}
+<form method="post" action="/details/{{$res.CustomerId}}" enctype="multipart/form-data" class="needs-validation" novalidate>
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    <input type="hidden" name="status" value="Entered">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3 custom-form-group">
+                    <label for="customerCode" class="form-label">Customer Code</label>
+                    {{with .Form.Errors.Get "customerCode"}}
+                    <div class="text-danger">{{.}}</div>
+                    {{end}}
+                    <input type="text" value="{{$res.CustomerCode}}" name="customerCode" class="form-control {{with .Form.Errors.Get "customerCode"}} is-invalid {{end}}" id="customerCode" required>
                 </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="businessName">Business Name</label>
-                        {{with .Form.Errors.Get "businessName"}}
-                        <label class="text-danger">{{.}}</label>
-                        {{end}}
-                        <input type="text" value="{{$res.BusinessName}}" name='businessName' class="form-control {{with .Form.Errors.Get "businessName"}} is-invalid {{end}}" id="businessName">
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                         {{with .Form.Errors.Get "email"}}
-                         <label class="text-danger">{{.}}</label>
-                        {{end}}
-                        <input type="email"  value="{{$res.Email}}" name='email' class="form-control {{with .Form.Errors.Get "email"}} is-invalid {{end}}" id="email">
-                    </div>
-                    <div class="form-group">
-                        <label for="locationDetails">Location Details</label>
-                        <input type="text" value="{{$res.LocationDetails}}" name='locationDetails' class="form-control" id="locationDetails">
-                    </div>
-                    <div class="form-group">
-                        <label for="natureOfBusiness">Nature of Business</label>
-                        {{with .Form.Errors.Get "natureOfBusiness"}}
-                        <label class="text-danger">{{.}}</label>
-                        {{end}}
-                        <textarea name='natureOfBusiness' value="{{$res.NatureOfBusiness}}" class="form-control {{with .Form.Errors.Get "natureOfBusiness"}} is-invalid {{end}}" id="natureOfBusiness" rows="3"></textarea>
-                    </div>
+                <div class="mb-3 custom-form-group">
+                    <label for="customerName" class="form-label">Name of the Customer</label>
+                    {{with .Form.Errors.Get "customerName"}}
+                    <div class="text-danger">{{.}}</div>
+                    {{end}}
+                    <input type="text" value="{{$res.CustomerName}}" name="customerName" class="form-control {{with .Form.Errors.Get "customerName"}} is-invalid {{end}}" id="customerName" required>
+                </div>
+                <div class="mb-3 custom-form-group">
+                    <label for="contactNo" class="form-label">Contact No</label>
+                    {{with .Form.Errors.Get "contactNo"}}
+                    <div class="text-danger">{{.}}</div>
+                    {{end}}
+                    <input type="tel" name="contactNo" value="{{$res.ContactNo}}" class="form-control {{with .Form.Errors.Get "contactNo"}} is-invalid {{end}}" id="contactNo">
+                </div>
+                <div class="mb-3 custom-form-group">
+                    <label for="contactPerson" class="form-label">Contact Person</label>
+                    {{with .Form.Errors.Get "contactPerson"}}
+                    <div class="text-danger">{{.}}</div>
+                    {{end}}
+                    <input type="text" value="{{$res.ContactPerson}}" name="contactPerson" class="form-control {{with .Form.Errors.Get "contactPerson"}} is-invalid {{end}}" id="contactPerson">
+                </div>
+                <div class="mb-3 custom-form-group">
+                    <label for="mobileNo" class="form-label">Mobile No</label>
+                    {{with .Form.Errors.Get "mobileNo"}}
+                    <div class="text-danger">{{.}}</div>
+                    {{end}}
+                    <input type="tel" value="{{$res.MobileNo}}" name="mobileNo" class="form-control {{with .Form.Errors.Get "mobileNo"}} is-invalid {{end}}" id="mobileNo">
                 </div>
             </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="marketedBy">Marketed by</label>
-                        <input type="text" name='marketedBy' value="{{$res.MarketedBy}}" class="form-control" id="marketedBy">
-                    </div>
-                    <div class="form-group">
-                        <label for="marketerName">Marketer Name</label>
-                        <input type="text" name='marketerName' value="{{$res.MarketerName}}" class="form-control" id="marketerName">
-                    </div>
-                    <div class="form-group">
-                        <label for="marketerEmail">Marketer Email</label>
-                        <input type="email" name='marketerEmail' value="{{$res.MarketerEmail}}" class="form-control" id="marketerEmail">
-                    </div>
+            <div class="col-md-6">
+                <div class="mb-3 custom-form-group">
+                    <label for="businessName" class="form-label">Business Name</label>
+                    {{with .Form.Errors.Get "businessName"}}
+                    <div class="text-danger">{{.}}</div>
+                    {{end}}
+                    <input type="text" value="{{$res.BusinessName}}" name="businessName" class="form-control {{with .Form.Errors.Get "businessName"}} is-invalid {{end}}" id="businessName">
                 </div>
-            </div>
-            <br/>
-        <!-- Display attachments -->
-            {{printf "Number of attachments: %d" (len .Data.attachments)}}
-            {{range $attachment := .Data.attachments}}
-                <br/>
-                <a href="{{$attachment}}" target="_blank">{{$attachment}}</a>
-                <br/>
-            {{end}}
-            <br/>
-            <!-- Add the button panel with the three buttons -->
-            <div class="button-panel">
-                <a href="/customer-trade-license/{{$res.CustomerId}}" class="btn btn-primary" role="button">Trade License</a>
-                <a href="/customer-partners/{{$res.CustomerId}}" class="btn btn-primary" role="button">Partners</a>
-                <a href="/customer-memorandum/{{$res.CustomerId}}" class="btn btn-primary" role="button">Memorandum</a>
-            </div>
-            <br/>
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Save</button>
-                <button type="button" id="cancel" class="btn btn-secondary">Cancel</button>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    {{with .Form.Errors.Get "email"}}
+                    <div class="text-danger">{{.}}</div>
+                    {{end}}
+                    <input type="email" value="{{$res.Email}}" name="email" class="form-control {{with .Form.Errors.Get "email"}} is-invalid {{end}}" id="email">
+                </div>
+                <div class="mb-3">
+                    <label for="locationDetails" class="form-label">Location Details</label>
+                    <input type="text" value="{{$res.LocationDetails}}" name="locationDetails" class="form-control" id="locationDetails">
+                </div>
+                <div class="mb-3">
+                    <label for="natureOfBusiness" class="form-label">Nature of Business</label>
+                    {{with .Form.Errors.Get "natureOfBusiness"}}
+                    <div class="text-danger">{{.}}</div>
+                    {{end}}
+                    <textarea name="natureOfBusiness" class="form-control {{with .Form.Errors.Get "natureOfBusiness"}} is-invalid {{end}}" id="natureOfBusiness" rows="3">{{$res.NatureOfBusiness}}</textarea>
+                </div>
             </div>
         </div>
-    </form>
-    <script>
-        function displaySelectedFiles(input) {
-            var label = input.nextElementSibling;
-            var fileNames = Array.from(input.files).map(file => file.name);
-            label.innerHTML = fileNames.join(', ');
-        }
-    </script>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="marketedBy" class="form-label">Marketed by</label>
+                    <input type="text" name="marketedBy" value="{{$res.MarketedBy}}" class="form-control" id="marketedBy">
+                </div>
+                <div class="mb-3">
+                    <label for="marketerName" class="form-label">Marketer Name</label>
+                    <input type="text" name="marketerName" value="{{$res.MarketerName}}" class="form-control" id="marketerName">
+                </div>
+                <div class="mb-3">
+                    <label for="marketerEmail" class="form-label">Marketer Email</label>
+                    <input type="email" name="marketerEmail" value="{{$res.MarketerEmail}}" class="form-control" id="marketerEmail">
+                </div>
+            </div>
+        </div>
+        <br/>
+        <!-- Display attachments -->
+        {{printf "Number of attachments: %d" (len .Data.attachments)}}
+        {{range $attachment := .Data.attachments}}
+            <br/>
+            <a href="{{$attachment}}" target="_blank">{{$attachment}}</a>
+            <br/>
+        {{end}}
+        <br/>
+        <!-- Add the button panel with the three buttons -->
+        <div class="button-panel">
+            <a href="/customer/trade-license/{{$res.CustomerId}}" class="btn btn-primary" role="button">Trade License</a>
+            <a href="/customer/partners/{{$res.CustomerId}}" class="btn btn-primary" role="button">Partners</a>
+            <a href="/customer/memorandum/{{$res.CustomerId}}" class="btn btn-primary" role="button">Memorandum</a>
+        </div>
+        <br/>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" id="cancel" class="btn btn-secondary">Cancel</button>
+        </div>
+    </div>
+</form>
+<script>
+    function displaySelectedFiles(input) {
+        var label = input.nextElementSibling;
+        var fileNames = Array.from(input.files).map(file => file.name);
+        label.innerHTML = fileNames.join(', ');
+    }
+</script>
 {{end}}
